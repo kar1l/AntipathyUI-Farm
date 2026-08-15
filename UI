@@ -1,8 +1,12 @@
 -- ============================================
--- CONFIGURATION
+-- ANTIPATHY UI MODULE
 -- ============================================
-local CONTROLLER_USERNAME = "00000919708970109618" -- Set this to your main account's username
-local ALT_USERNAMES = {"00000919708971019618", "00000919019791007896"} -- List of alt usernames as strings in quotes
+-- This script is loaded BY Functions.lua which passes itself as an argument.
+-- All configuration (usernames, etc.) lives in Functions.lua.
+-- ============================================
+
+-- Receive Functions module from the loader
+local Functions = ... or _G.AntipathyFunctions
 
 -- ============================================
 -- SERVICES
@@ -14,70 +18,9 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local pg = LocalPlayer:WaitForChild("PlayerGui")
 
--- ============================================
--- ALT MODE GATE (Supports Usernames & UserIds)
--- ============================================
-local function isControllerAccount(player)
-	if not player then return false end
-	if not CONTROLLER_USERNAME or CONTROLLER_USERNAME == "" or CONTROLLER_USERNAME == "YourUsernameHere" then
-		return true
-	end
-	local cStr = tostring(CONTROLLER_USERNAME):lower()
-	if tostring(player.Name):lower() == cStr then return true end
-	if tostring(player.UserId) == cStr then return true end
-	return false
-end
-
-if not isControllerAccount(LocalPlayer) then
-	local altGui = Instance.new("ScreenGui")
-	altGui.Name = "AntipathyAlt"
-	altGui.ResetOnSpawn = false
-	altGui.DisplayOrder = 999999
-	altGui.Parent = pg
-
-	local bg = Instance.new("Frame")
-	bg.Size = UDim2.new(1, 0, 1, 0)
-	bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	bg.BorderSizePixel = 0
-	bg.ZIndex = 999999
-	bg.Parent = altGui
-
-	local t = Instance.new("TextLabel")
-	t.Size = UDim2.new(1, 0, 1, 0)
-	t.BackgroundTransparency = 1
-	t.Text = "Antipathy"
-	t.TextColor3 = Color3.fromRGB(50, 50, 50)
-	t.Font = Enum.Font.GothamBold
-	t.TextSize = 42
-	t.ZIndex = 1000000
-	t.Parent = bg
-
-	pcall(function() setfpscap(3) end)
-	pcall(function() RunService:Set3dRenderingEnabled(false) end)
-
-	-- Launch Alt Functions Listener
-	pcall(function()
-		local ok, fn = pcall(function() return loadstring(readfile("Functions.lua"))() end)
-		if not ok or not fn then
-			pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/user/antipathy/main/Functions.lua"))() end)
-		end
-	end)
-	return
-end
-
--- ============================================
--- LOAD FUNCTIONS BACKEND
--- ============================================
-local Functions
-pcall(function()
-	local ok, fn = pcall(function() return loadstring(readfile("Functions.lua"))() end)
-	if ok and fn then Functions = fn end
-end)
-if not Functions then
-	pcall(function()
-		Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/user/antipathy/main/Functions.lua"))()
-	end)
-end
+-- Pull configuration from Functions
+local CONTROLLER_USERNAME = Functions and Functions.CONTROLLER_USERNAME or ""
+local ALT_USERNAMES = Functions and Functions.ALT_USERNAMES or {}
 
 -- ============================================
 -- CACHED TWEENINFOS
@@ -99,7 +42,7 @@ local COL_GAP = 10
 -- ============================================
 -- SETTINGS TABLE
 -- ============================================
-local Settings = {
+local Settings = Functions and Functions.Settings or {
 	Farm = {
 		Run = { Enabled = false, Delay = 0, Speed = 16, RandomJumps = false, Keybind = "" },
 		Teleport = { Enabled = false, Delay = 0, Position = "Normal", Keybind = "" },
