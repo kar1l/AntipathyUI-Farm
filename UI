@@ -44,15 +44,23 @@ local COL_GAP = 10
 -- ============================================
 local Settings = Functions and Functions.Settings or {
 	Farm = {
-		Run = { Enabled = false, Delay = 0, Speed = 16, RandomJumps = false, Keybind = "" },
-		Teleport = { Enabled = false, Delay = 0, Position = "Normal", Keybind = "" },
-		Goal = { Wins = { Enabled = false, Ability = "None" }, Kills = { Enabled = false, Ability = "None" } },
+		Normal = { Enabled = false, Delay = 0, CPS = 10, Ability = "None", Keybind = "" },
+		Run = { Enabled = false, Delay = 0, Speed = 16, RandomJumps = false, Ability = "None", Keybind = "" },
+		Teleport = { Enabled = false, Delay = 0, Position = "Normal", Ability = "None", Keybind = "" },
 		Parry = { Randomized = false, RandomizedMin = 0, RandomizedMax = 1, Accuracy = 0.5 },
 		Gamemode = "Classic",
 	},
-	Bots = {},
+	Bots = {
+		Ability = "None",
+		FPS = 60,
+		RemoveTextures = false,
+		DisableRendering = false,
+		RemoveShadows = false,
+		RemoveParticles = false,
+		RemoveEffects = false,
+	},
 	Safety = {
-		AutoAfk = { Enabled = false, Delay = 0, Keybind = "" },
+		AutoAfk = { Enabled = false, Delay = 0, ExcludeMain = false, Keybind = "" },
 		AutoLeave = { Enabled = false, Delay = 0, ExcludeMain = false, Keybind = "" },
 		AutoStop = { Enabled = false, Delay = 0, Keybind = "" },
 		Whitelist = {},
@@ -167,11 +175,27 @@ task.wait(0.35); loaderGui:Destroy()
 local existing = pg:FindFirstChild("AntipathyAV"); if existing then existing:Destroy() end
 local guiParent = pg; pcall(function() if game:GetService("CoreGui") then guiParent = game:GetService("CoreGui") end end)
 local screenGui = Instance.new("ScreenGui"); screenGui.Name = "AntipathyAV"; screenGui.ResetOnSpawn = false; screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; screenGui.DisplayOrder = 999; screenGui.Parent = guiParent
-local frame = Instance.new("Frame"); frame.Name = "Main"; frame.Size = UDim2.new(0,FRAME_W,0,FRAME_H); frame.Position = UDim2.new(0.5,-FRAME_W/2,0.5,-FRAME_H/2); frame.BackgroundColor3 = Color3.fromRGB(0,0,0); frame.BorderSizePixel = 0; frame.ClipsDescendants = true; frame.Parent = screenGui
+local frame = Instance.new("Frame"); frame.Name = "Main"; frame.Size = UDim2.new(0,FRAME_W,0,FRAME_H); frame.Position = UDim2.new(0.5,-FRAME_W/2,0.5,-FRAME_H/2); frame.BackgroundColor3 = Color3.fromRGB(0,0,0); frame.BorderSizePixel = 0; frame.ClipsDescendants = false; frame.Parent = screenGui
 local viewportSize = workspace.CurrentCamera.ViewportSize
 local deviceScale = math.min(1, math.min(viewportSize.X/1920, viewportSize.Y/1080))
 local uiScale = Instance.new("UIScale"); uiScale.Scale = deviceScale; uiScale.Parent = frame
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() local vp = workspace.CurrentCamera.ViewportSize; deviceScale = math.min(1, math.min(vp.X/1920, vp.Y/1080)); if uiScale.Scale > 0 then uiScale.Scale = deviceScale end end)
+
+-- Ambient Feathered / Blurry Edge (Softly Blends Window into Background)
+local ambientFeather = Instance.new("ImageLabel")
+ambientFeather.Name = "AmbientFeather"
+ambientFeather.AnchorPoint = Vector2.new(0.5, 0.5)
+ambientFeather.Position = UDim2.new(0.5, 0, 0.5, 0)
+ambientFeather.Size = UDim2.new(1, 56, 1, 56)
+ambientFeather.BackgroundTransparency = 1
+ambientFeather.Image = "rbxassetid://1316045217"
+ambientFeather.ImageColor3 = Color3.fromRGB(0, 0, 0)
+ambientFeather.ImageTransparency = 0.35
+ambientFeather.ScaleType = Enum.ScaleType.Slice
+ambientFeather.SliceCenter = Rect.new(10, 10, 118, 118)
+ambientFeather.ZIndex = 0
+ambientFeather.Parent = frame
+
 local mainGradient = Instance.new("UIGradient"); mainGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)), ColorSequenceKeypoint.new(0.7, Color3.fromRGB(8,8,8)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0))}; mainGradient.Rotation = 90; mainGradient.Parent = frame
 addCornerBorder(frame, Color3.fromRGB(255,255,255), 1.5, 16)
 local frameStroke = Instance.new("UIStroke"); frameStroke.Color = Color3.fromRGB(80,80,80); frameStroke.Thickness = 1; frameStroke.Transparency = 0.8; frameStroke.Parent = frame
@@ -293,7 +317,7 @@ task.spawn(function()
 			_footerGhost.TextTransparency = 0.6
 			_footerGhost.TextSize = bgFooter.TextSize + 1
 			_footerGhost.Visible = true
-			TweenService:Create(_footerGhost, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {TextTransparency = 1}):Play()
+			TweenService:Create(_footerGhost, TweenInfo.new(0.06, Enum.EasingStyle.Linear), {TextTransparency = 1}):Play()
 		end
 
 		bgFooter.Position = UDim2.new(0, math.floor(bfx), 0, math.floor(bfy))
@@ -624,26 +648,37 @@ resetBtn.MouseButton1Click:Connect(function()
 	if isResetting then return end
 	isResetting = true
 	-- Reset Settings to defaults
+	Settings.Farm.Normal.Enabled = false
+	Settings.Farm.Normal.Delay = 0
+	Settings.Farm.Normal.CPS = 10
+	Settings.Farm.Normal.Ability = "None"
 	Settings.Farm.Run.Enabled = false
 	Settings.Farm.Run.Delay = 0
 	Settings.Farm.Run.Speed = 16
 	Settings.Farm.Run.RandomJumps = false
+	Settings.Farm.Run.Ability = "None"
 	Settings.Farm.Teleport.Enabled = false
 	Settings.Farm.Teleport.Delay = 0
 	Settings.Farm.Teleport.Position = "Normal"
-	Settings.Farm.Goal.Wins.Enabled = false
-	Settings.Farm.Goal.Wins.Ability = "None"
-	Settings.Farm.Goal.Kills.Enabled = false
-	Settings.Farm.Goal.Kills.Ability = "None"
+	Settings.Farm.Teleport.Ability = "None"
 	Settings.Farm.Parry.Randomized = false
 	Settings.Farm.Parry.RandomizedMin = 0
 	Settings.Farm.Parry.RandomizedMax = 1
 	Settings.Farm.Parry.Accuracy = 0.5
 	Settings.Farm.Gamemode = "Classic"
+	Settings.Bots.Ability = "None"
+	Settings.Bots.FPS = 60
+	Settings.Bots.RemoveTextures = false
+	Settings.Bots.DisableRendering = false
+	Settings.Bots.RemoveShadows = false
+	Settings.Bots.RemoveParticles = false
+	Settings.Bots.RemoveEffects = false
 	Settings.Safety.AutoAfk.Enabled = false
 	Settings.Safety.AutoAfk.Delay = 0
+	Settings.Safety.AutoAfk.ExcludeMain = false
 	Settings.Safety.AutoLeave.Enabled = false
 	Settings.Safety.AutoLeave.Delay = 0
+	Settings.Safety.AutoLeave.ExcludeMain = false
 	Settings.Safety.AutoStop.Enabled = false
 	Settings.Safety.AutoStop.Delay = 0
 
@@ -1581,31 +1616,42 @@ local function createWhitelistManager(order, parent, listTbl)
 end
 
 -- ============================================
--- FARM TAB (3-column masonry + Mutual Exclusive Goals)
+-- FARM TAB (3-column layout: Normal, Run, Teleport)
 -- ============================================
 do
 	createDivider("Farming Tab", 1, tabs.Farm)
 	local _, farmCols = createColumnLayout(tabs.Farm, 3, COL_GAP, 2)
-	local runSetEnabled, teleportSetEnabled
+	local normalSetEnabled, runSetEnabled, teleportSetEnabled
 
-	-- Col 1: Run, Parry
-	local runSettings; runSettings, _, runSetEnabled = createSection("Run", 1, farmCols[1], {
-		tbl = Settings.Farm.Run,
+	-- Col 1: Normal, Parry
+	local normalSettings; normalSettings, _, normalSetEnabled = createSection("Normal", 1, farmCols[1], {
+		tbl = Settings.Farm.Normal,
 		enabledKey = "Enabled",
-		description = "Run method",
-		tooltip = "This method will have the accounts running to middle",
+		description = "Normal method",
+		tooltip = "Normal farming method with CPS & ability configuration",
 		tag = "1x01",
-		keybindTbl = Settings.Farm.Run,
+		keybindTbl = Settings.Farm.Normal,
 		keybindKey = "Keybind",
-		onToggle = function(isOn) if isOn and teleportSetEnabled then teleportSetEnabled(false) end end
+		onToggle = function(isOn)
+			if isOn then
+				if runSetEnabled then runSetEnabled(false) end
+				if teleportSetEnabled then teleportSetEnabled(false) end
+			end
+		end
 	})
-	createTextBox("Run Delay", 1, runSettings, Settings.Farm.Run, "Delay", 4, true)
-	createTextBox("Run Speed", 2, runSettings, Settings.Farm.Run, "Speed", 2, true)
-	createSwitch("Random Jumps", 3, runSettings, Settings.Farm.Run, "RandomJumps")
+	createTextBox("Delay", 1, normalSettings, Settings.Farm.Normal, "Delay", 4, true)
+	local _, cpsBox = createTextBox("CPS (1-10)", 2, normalSettings, Settings.Farm.Normal, "CPS", 2, true)
+	cpsBox.FocusLost:Connect(function()
+		local val = tonumber(cpsBox.Text) or 1
+		val = math.clamp(math.floor(val), 1, 10)
+		cpsBox.Text = tostring(val)
+		Settings.Farm.Normal.CPS = val
+	end)
+	createDropdown("Ability", 3, normalSettings, {"None", "Dragon V2", "Absolute Conf."}, Settings.Farm.Normal, "Ability")
 
 	local parrySettings = createSection("Parry", 2, farmCols[1], {
 		description = "Parry range & accuracy",
-		tooltip = "Set parry timing and range ",
+		tooltip = "Set parry timing and range",
 		tag = "1x02"
 	})
 
@@ -1618,61 +1664,57 @@ do
 	randMaxSlider = createSlider("Rand. Max", 3, parrySettings, 0, 1, Settings.Farm.Parry, "RandomizedMax", 0.01)
 	createSlider("Accuracy", 4, parrySettings, 0, 1, Settings.Farm.Parry, "Accuracy", 0.01)
 
-	-- Apply initial parry randomized dimming
 	local isInitRand = Settings.Farm.Parry.Randomized
 	randMinSlider.setDimmed(not isInitRand)
 	randMaxSlider.setDimmed(not isInitRand)
 
-	-- Col 2: Teleport, Gamemode
-	local teleportSettings; teleportSettings, _, teleportSetEnabled = createSection("Teleport", 1, farmCols[2], {
-		tbl = Settings.Farm.Teleport,
+	-- Col 2: Run, Gamemode
+	local runSettings; runSettings, _, runSetEnabled = createSection("Run", 1, farmCols[2], {
+		tbl = Settings.Farm.Run,
 		enabledKey = "Enabled",
-		description = "Teleport method",
-		tooltip = "Teleport to the middle instead of running",
+		description = "Run method",
+		tooltip = "This method will have the accounts running to middle",
 		tag = "1x03",
-		keybindTbl = Settings.Farm.Teleport,
+		keybindTbl = Settings.Farm.Run,
 		keybindKey = "Keybind",
-		onToggle = function(isOn) if isOn and runSetEnabled then runSetEnabled(false) end end
+		onToggle = function(isOn)
+			if isOn then
+				if normalSetEnabled then normalSetEnabled(false) end
+				if teleportSetEnabled then teleportSetEnabled(false) end
+			end
+		end
 	})
-	createTextBox("Delay", 1, teleportSettings, Settings.Farm.Teleport, "Delay", 4, true)
-	createDropdown("Position", 2, teleportSettings, {"Normal","Above","Below"}, Settings.Farm.Teleport, "Position")
+	createTextBox("Run Delay", 1, runSettings, Settings.Farm.Run, "Delay", 4, true)
+	createTextBox("Run Speed", 2, runSettings, Settings.Farm.Run, "Speed", 2, true)
+	createSwitch("Random Jumps", 3, runSettings, Settings.Farm.Run, "RandomJumps")
+	createDropdown("Ability", 4, runSettings, {"None", "Dragon V2", "Absolute Conf."}, Settings.Farm.Run, "Ability")
 
 	local gamemodeSettings = createSection("Gamemode", 2, farmCols[2], {
 		description = "Gamemode selection",
 		tooltip = "Select gamemode to choose when farming",
 		tag = "1x04"
 	})
-	createDropdown("Mode", 1, gamemodeSettings, {"Classic","2 Teams","Placeholder"}, Settings.Farm, "Gamemode")
+	createDropdown("Mode", 1, gamemodeSettings, {"Classic", "2 Teams", "Placeholder"}, Settings.Farm, "Gamemode")
 
-	-- Col 3: Goal (Mutually Exclusive Wins / Kills)
-	local goalSettings = createSection("Priority", 1, farmCols[3], {
-		description = "Win or kill priority",
-		tooltip = "Set whether you wanna prioritize wins or kills",
-		tag = "1x05"
+	-- Col 3: Teleport
+	local teleportSettings; teleportSettings, _, teleportSetEnabled = createSection("Teleport", 1, farmCols[3], {
+		tbl = Settings.Farm.Teleport,
+		enabledKey = "Enabled",
+		description = "Teleport method",
+		tooltip = "Teleport to the middle instead of running",
+		tag = "1x05",
+		keybindTbl = Settings.Farm.Teleport,
+		keybindKey = "Keybind",
+		onToggle = function(isOn)
+			if isOn then
+				if normalSetEnabled then normalSetEnabled(false) end
+				if runSetEnabled then runSetEnabled(false) end
+			end
+		end
 	})
-
-	local winsSwitch, killsSwitch
-	local winsAbilityDD, killsAbilityDD
-
-	winsSwitch = createSwitch("Wins", 1, goalSettings, Settings.Farm.Goal.Wins, "Enabled", function(isOn)
-		if isOn then
-			if killsSwitch then killsSwitch.setEnabled(false) end
-			if killsAbilityDD then killsAbilityDD.Visible = false end
-		end
-		if winsAbilityDD then winsAbilityDD.Visible = isOn end
-	end)
-	winsAbilityDD = createDropdown("Ability", 2, goalSettings, {"Dragon V2", "Absolute Conf."}, Settings.Farm.Goal.Wins, "Ability")
-	winsAbilityDD.Visible = Settings.Farm.Goal.Wins.Enabled
-
-	killsSwitch = createSwitch("Kills", 3, goalSettings, Settings.Farm.Goal.Kills, "Enabled", function(isOn)
-		if isOn then
-			if winsSwitch then winsSwitch.setEnabled(false) end
-			if winsAbilityDD then winsAbilityDD.Visible = false end
-		end
-		if killsAbilityDD then killsAbilityDD.Visible = isOn end
-	end)
-	killsAbilityDD = createDropdown("Ability", 4, goalSettings, {"Dragon V2", "Absolute Conf."}, Settings.Farm.Goal.Kills, "Ability")
-	killsAbilityDD.Visible = Settings.Farm.Goal.Kills.Enabled
+	createTextBox("Delay", 1, teleportSettings, Settings.Farm.Teleport, "Delay", 4, true)
+	createDropdown("Position", 2, teleportSettings, {"Normal", "Above", "Below"}, Settings.Farm.Teleport, "Position")
+	createDropdown("Ability", 3, teleportSettings, {"None", "Dragon V2", "Absolute Conf."}, Settings.Farm.Teleport, "Ability")
 end
 
 -- ============================================
@@ -1844,12 +1886,34 @@ local function createBotCard(targetCol, userId, displayName, username)
 		local corners = addCornerBorder(b, Color3.fromRGB(80, 80, 90), 1, 5)
 
 		b.MouseEnter:Connect(function()
-			TweenService:Create(b, TI_FAST, {BackgroundColor3 = Color3.fromRGB(32, 32, 40)}):Play()
+			if b.Text ~= "Done" then
+				TweenService:Create(b, TI_FAST, {BackgroundColor3 = Color3.fromRGB(32, 32, 40)}):Play()
+			end
 		end)
 		b.MouseLeave:Connect(function()
-			TweenService:Create(b, TI_FAST, {BackgroundColor3 = Color3.fromRGB(14, 14, 18)}):Play()
+			if b.Text ~= "Done" then
+				TweenService:Create(b, TI_FAST, {BackgroundColor3 = Color3.fromRGB(14, 14, 18)}):Play()
+			end
 		end)
 		return b, corners
+	end
+
+	local function triggerCardBtnDone(b, corners, origText, origColor)
+		task.spawn(function()
+			b.Text = "Done"
+			b.TextColor3 = Color3.fromRGB(80, 220, 255)
+			b.BackgroundColor3 = Color3.fromRGB(20, 45, 75)
+			for _, c in ipairs(corners) do
+				c.BackgroundColor3 = Color3.fromRGB(80, 220, 255)
+			end
+			task.wait(1.2)
+			b.Text = origText
+			b.TextColor3 = origColor or Color3.fromRGB(220, 220, 225)
+			b.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
+			for _, c in ipairs(corners) do
+				c.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+			end
+		end)
 	end
 
 	-- Leave Button
@@ -1858,14 +1922,11 @@ local function createBotCard(targetCol, userId, displayName, username)
 	leaveBtn.MouseButton1Click:Connect(function()
 		if isLeaving then return end
 		isLeaving = true
-		if Functions then Functions.SendCommand(userId, "Leave") end
-		leaveBtn.Text = "Done"
-		leaveBtn.TextColor3 = Color3.fromRGB(80, 220, 255)
-		for _, c in ipairs(leaveCorners) do c.BackgroundColor3 = Color3.fromRGB(80, 220, 255) end
-		task.wait(1.0)
-		leaveBtn.Text = "Leave"
-		leaveBtn.TextColor3 = Color3.fromRGB(220, 220, 225)
-		for _, c in ipairs(leaveCorners) do c.BackgroundColor3 = Color3.fromRGB(80, 80, 90) end
+		pcall(function()
+			if Functions then Functions.SendCommand(userId, "Leave") end
+		end)
+		triggerCardBtnDone(leaveBtn, leaveCorners, "Leave")
+		task.wait(1.2)
 		isLeaving = false
 	end)
 
@@ -1875,14 +1936,11 @@ local function createBotCard(targetCol, userId, displayName, username)
 	rejoinBtn.MouseButton1Click:Connect(function()
 		if isRejoining then return end
 		isRejoining = true
-		if Functions then Functions.SendCommand(userId, "Rejoin") end
-		rejoinBtn.Text = "Done"
-		rejoinBtn.TextColor3 = Color3.fromRGB(80, 220, 255)
-		for _, c in ipairs(rejoinCorners) do c.BackgroundColor3 = Color3.fromRGB(80, 220, 255) end
-		task.wait(1.0)
-		rejoinBtn.Text = "Rejoin"
-		rejoinBtn.TextColor3 = Color3.fromRGB(220, 220, 225)
-		for _, c in ipairs(rejoinCorners) do c.BackgroundColor3 = Color3.fromRGB(80, 80, 90) end
+		pcall(function()
+			if Functions then Functions.SendCommand(userId, "Rejoin") end
+		end)
+		triggerCardBtnDone(rejoinBtn, rejoinCorners, "Rejoin")
+		task.wait(1.2)
 		isRejoining = false
 	end)
 
@@ -1913,6 +1971,9 @@ local function createBotCard(targetCol, userId, displayName, username)
 	afkBtn.MouseButton1Click:Connect(function()
 		isAfk = not isAfk
 		updateAfkVisuals()
+		pcall(function()
+			if Functions then Functions.SendCommand(userId, "AFK", { state = isAfk }) end
+		end)
 	end)
 
 	-- Themed Action Button Row 2 (Follow, Bring, Spin)
@@ -1945,23 +2006,22 @@ local function createBotCard(targetCol, userId, displayName, username)
 	followBtn.MouseButton1Click:Connect(function()
 		isFollowing = not isFollowing
 		updateFollowVisuals()
-		if Functions then Functions.SendCommand(userId, "Follow", { state = isFollowing }) end
+		pcall(function()
+			if Functions then Functions.SendCommand(userId, "Follow", { state = isFollowing }) end
+		end)
 	end)
 
-	-- Bring 1-Click Action Button (Displays 'Done' in Cyan)
+	-- Bring 1-Click Action Button (Displays 'Done' in Cyan/Blue)
 	local bringBtn, bringCorners = makeThemedCardBtn("Bring", 2, btnRow2)
 	local isBringing = false
 	bringBtn.MouseButton1Click:Connect(function()
 		if isBringing then return end
 		isBringing = true
-		if Functions then Functions.SendCommand(userId, "Bring") end
-		bringBtn.Text = "Done"
-		bringBtn.TextColor3 = Color3.fromRGB(80, 220, 255)
-		for _, c in ipairs(bringCorners) do c.BackgroundColor3 = Color3.fromRGB(80, 220, 255) end
-		task.wait(1.0)
-		bringBtn.Text = "Bring"
-		bringBtn.TextColor3 = Color3.fromRGB(220, 220, 225)
-		for _, c in ipairs(bringCorners) do c.BackgroundColor3 = Color3.fromRGB(80, 80, 90) end
+		pcall(function()
+			if Functions then Functions.SendCommand(userId, "Bring") end
+		end)
+		triggerCardBtnDone(bringBtn, bringCorners, "Bring")
+		task.wait(1.2)
 		isBringing = false
 	end)
 
@@ -2056,11 +2116,71 @@ local function removeBotEntry(userId)
 end
 
 do
-	createDivider("Placeholder", 1, tabs.BOTs)
-	local _, phCols = createColumnLayout(tabs.BOTs, 3, COL_GAP, 2)
-	createSection("Placeholder 1", 1, phCols[1], {description = "Placeholder text", tooltip = "Placeholder text", tag = "2x01"})
-	createSection("Placeholder 2", 1, phCols[2], {description = "Placeholder text", tooltip = "Placeholder text", tag = "2x02"})
-	createSection("Placeholder 3", 1, phCols[3], {description = "Placeholder text", tooltip = "Placeholder text", tag = "2x03"})
+	createDivider("Alt Settings", 1, tabs.BOTs)
+	local _, botSettingCols = createColumnLayout(tabs.BOTs, 3, COL_GAP, 2)
+
+	-- Col 1: Ability & Performance
+	local abilitySection = createSection("Ability", 1, botSettingCols[1], {
+		description = "Alt ability selection",
+		tooltip = "Select ability for alt accounts",
+		tag = "2x01"
+	})
+	createDropdown("Ability", 1, abilitySection, {"None", "Dragon V2", "Absolute Conf."}, Settings.Bots, "Ability")
+
+	local fpsSection = createSection("Performance", 2, botSettingCols[1], {
+		description = "Alt FPS limit",
+		tooltip = "Set FPS limit for alt accounts (1 to 9999)",
+		tag = "2x02"
+	})
+	local _, fpsBox = createTextBox("Change FPS", 1, fpsSection, Settings.Bots, "FPS", 4, true)
+	fpsBox.FocusLost:Connect(function()
+		local val = tonumber(fpsBox.Text) or 60
+		val = math.clamp(math.floor(val), 1, 9999)
+		fpsBox.Text = tostring(val)
+		Settings.Bots.FPS = val
+		pcall(function()
+			if Functions then Functions.BroadcastCommand("SetFPS", { fps = val }) end
+		end)
+	end)
+
+	-- Col 2: Optimization (Rendering & Textures)
+	local optSection = createSection("Optimization", 1, botSettingCols[2], {
+		description = "Rendering & textures",
+		tooltip = "Toggle texture removal, 3D rendering and shadows",
+		tag = "2x03"
+	})
+	createSwitch("Remove Textures", 1, optSection, Settings.Bots, "RemoveTextures", function(isOn)
+		pcall(function()
+			if Functions then Functions.BroadcastCommand("RemoveTextures", { state = isOn }) end
+		end)
+	end)
+	createSwitch("Disable Rendering", 2, optSection, Settings.Bots, "DisableRendering", function(isOn)
+		pcall(function()
+			if Functions then Functions.BroadcastCommand("DisableRendering", { state = isOn }) end
+		end)
+	end)
+	createSwitch("Remove Shadows", 3, optSection, Settings.Bots, "RemoveShadows", function(isOn)
+		pcall(function()
+			if Functions then Functions.BroadcastCommand("RemoveShadows", { state = isOn }) end
+		end)
+	end)
+
+	-- Col 3: Optimization (Particles & Effects)
+	local fxSection = createSection("Effects", 1, botSettingCols[3], {
+		description = "Particles & post-FX",
+		tooltip = "Toggle particle and post-processing removal",
+		tag = "2x04"
+	})
+	createSwitch("Remove Particles", 1, fxSection, Settings.Bots, "RemoveParticles", function(isOn)
+		pcall(function()
+			if Functions then Functions.BroadcastCommand("RemoveParticles", { state = isOn }) end
+		end)
+	end)
+	createSwitch("Remove Effects", 2, fxSection, Settings.Bots, "RemoveEffects", function(isOn)
+		pcall(function()
+			if Functions then Functions.BroadcastCommand("RemoveEffects", { state = isOn }) end
+		end)
+	end)
 
 	createDivider("BOTs In-Game", 3, tabs.BOTs)
 	local botContainer
@@ -2090,6 +2210,7 @@ do
 		keybindKey = "Keybind"
 	})
 	createTextBox("Delay (sec)", 1, afkS, Settings.Safety.AutoAfk, "Delay", 4, true)
+	createSwitch("Exclude Main", 2, afkS, Settings.Safety.AutoAfk, "ExcludeMain")
 
 	local leaveS = createSection("Auto Leave", 1, safetyCols[2], {
 		tbl = Settings.Safety.AutoLeave,
@@ -2282,6 +2403,7 @@ closeBtn.MouseButton1Click:Connect(function()
 		-- 1. Master Frame Fade in-place (sharp corners preserved, no position movement)
 		TweenService:Create(frame, TI_SYNC, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(frameStroke, TI_SYNC, {Transparency = 1}):Play()
+		if ambientFeather then TweenService:Create(ambientFeather, TI_SYNC, {ImageTransparency = 1}):Play() end
 
 		-- 2. Master Synchronized Fade across Topbar, TabPanel, Body, and ALL descendants
 		TweenService:Create(topbar, TI_SYNC, {BackgroundTransparency = 1}):Play()
@@ -2290,7 +2412,7 @@ closeBtn.MouseButton1Click:Connect(function()
 
 		for _, child in ipairs(frame:GetDescendants()) do
 			pcall(function()
-				if child == centerSparkle or child == bgFooter or child.Parent == bgContainer then return end
+				if child == centerSparkle or child == bgFooter or child.Parent == bgContainer or child == ambientFeather then return end
 				if child:IsA("TextLabel") or child:IsA("TextBox") or child:IsA("TextButton") then
 					TweenService:Create(child, TI_SYNC, {TextTransparency = 1, BackgroundTransparency = 1}):Play()
 				elseif child:IsA("ImageLabel") or child:IsA("ImageButton") then
@@ -2315,16 +2437,16 @@ closeBtn.MouseButton1Click:Connect(function()
 			TweenService:Create(ht, TI_SYNC, {ImageTransparency = 1}):Play()
 		end
 
-		-- 5. Bouncing footer text glitches rhythmically with corrupt chars, fades, and dissolves (across 2.0s)
+		-- 5. Bouncing footer text glitches rhythmically with corrupt chars, fades, and dissolves quickly
 		task.spawn(function()
 			local origPos = bgFooter.Position
 			local corruptTexts = {"01010101", "@ntip4thy...", "### #####", "why, why?", "H3il Antipathy", "....."}
-			for i = 1, 20 do
+			for i = 1, 6 do
 				bgFooter.Text = corruptTexts[math.random(#corruptTexts)]
-				bgFooter.Position = origPos + UDim2.new(0, math.random(-14, 14), 0, math.random(-6, 6))
-				bgFooter.TextTransparency = i / 20
+				bgFooter.Position = origPos + UDim2.new(0, math.random(-8, 8), 0, math.random(-4, 4))
+				bgFooter.TextTransparency = i / 6
 				bgFooter.TextColor3 = Color3.fromRGB(math.random(160, 255), math.random(160, 255), math.random(160, 255))
-				task.wait(0.09)
+				task.wait(0.03)
 			end
 			bgFooter.Visible = false
 		end)
