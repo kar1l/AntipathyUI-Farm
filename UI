@@ -63,6 +63,7 @@ local Settings = Functions and Functions.Settings or {
 		AutoAfk = { Enabled = false, Delay = 0, ExcludeMain = false, Keybind = "" },
 		AutoLeave = { Enabled = false, Delay = 0, ExcludeMain = false, Keybind = "" },
 		AutoStop = { Enabled = false, Delay = 0, Keybind = "" },
+		Spoof = { RandomizeUser = false, RandomizeDisplay = false, ClearOutfit = false },
 		Whitelist = {},
 	},
 	Stats = { FPS = 0, Ping = 0, HighestPing = 0, Wins = 0, Kills = 0, Deaths = 0, AfkAlts = 0, ActiveAlts = 0, TotalAlts = 0 },
@@ -317,7 +318,7 @@ task.spawn(function()
 			_footerGhost.TextTransparency = 0.6
 			_footerGhost.TextSize = bgFooter.TextSize + 1
 			_footerGhost.Visible = true
-			TweenService:Create(_footerGhost, TweenInfo.new(0.06, Enum.EasingStyle.Linear), {TextTransparency = 1}):Play()
+			TweenService:Create(_footerGhost, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {TextTransparency = 1}):Play()
 		end
 
 		bgFooter.Position = UDim2.new(0, math.floor(bfx), 0, math.floor(bfy))
@@ -681,6 +682,9 @@ resetBtn.MouseButton1Click:Connect(function()
 	Settings.Safety.AutoLeave.ExcludeMain = false
 	Settings.Safety.AutoStop.Enabled = false
 	Settings.Safety.AutoStop.Delay = 0
+	Settings.Safety.Spoof.RandomizeUser = false
+	Settings.Safety.Spoof.RandomizeDisplay = false
+	Settings.Safety.Spoof.ClearOutfit = false
 
 	resetLbl.Text = "Done"
 	resetLbl.TextColor3 = Color3.fromRGB(255, 120, 120)
@@ -2117,7 +2121,7 @@ end
 
 do
 	createDivider("Alt Settings", 1, tabs.BOTs)
-	local _, botSettingCols = createColumnLayout(tabs.BOTs, 3, COL_GAP, 2)
+	local _, botSettingCols = createColumnLayout(tabs.BOTs, 2, COL_GAP, 2)
 
 	-- Col 1: Ability & Performance
 	local abilitySection = createSection("Ability", 1, botSettingCols[1], {
@@ -2139,46 +2143,45 @@ do
 		fpsBox.Text = tostring(val)
 		Settings.Bots.FPS = val
 		pcall(function()
-			if Functions then Functions.BroadcastCommand("SetFPS", { fps = val }) end
+			if Functions and Functions.SetFPS then Functions.SetFPS(val) end
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("SetFPS", { fps = val }) end
 		end)
 	end)
 
-	-- Col 2: Optimization (Rendering & Textures)
+	-- Col 2: Unified Optimization (Textures, Rendering, Shadows, Particles, Effects)
 	local optSection = createSection("Optimization", 1, botSettingCols[2], {
-		description = "Rendering & textures",
-		tooltip = "Toggle texture removal, 3D rendering and shadows",
+		description = "Full engine optimizations",
+		tooltip = "Toggle texture, rendering, shadow, particle, and effect optimizations",
 		tag = "2x03"
 	})
 	createSwitch("Remove Textures", 1, optSection, Settings.Bots, "RemoveTextures", function(isOn)
 		pcall(function()
-			if Functions then Functions.BroadcastCommand("RemoveTextures", { state = isOn }) end
+			if Functions and Functions.SetRemoveTextures then Functions.SetRemoveTextures(isOn) end
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("RemoveTextures", { state = isOn }) end
 		end)
 	end)
 	createSwitch("Disable Rendering", 2, optSection, Settings.Bots, "DisableRendering", function(isOn)
 		pcall(function()
-			if Functions then Functions.BroadcastCommand("DisableRendering", { state = isOn }) end
+			if Functions and Functions.SetDisableRendering then Functions.SetDisableRendering(isOn) end
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("DisableRendering", { state = isOn }) end
 		end)
 	end)
 	createSwitch("Remove Shadows", 3, optSection, Settings.Bots, "RemoveShadows", function(isOn)
 		pcall(function()
-			if Functions then Functions.BroadcastCommand("RemoveShadows", { state = isOn }) end
+			if Functions and Functions.SetRemoveShadows then Functions.SetRemoveShadows(isOn) end
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("RemoveShadows", { state = isOn }) end
 		end)
 	end)
-
-	-- Col 3: Optimization (Particles & Effects)
-	local fxSection = createSection("Effects", 1, botSettingCols[3], {
-		description = "Particles & post-FX",
-		tooltip = "Toggle particle and post-processing removal",
-		tag = "2x04"
-	})
-	createSwitch("Remove Particles", 1, fxSection, Settings.Bots, "RemoveParticles", function(isOn)
+	createSwitch("Remove Particles", 4, optSection, Settings.Bots, "RemoveParticles", function(isOn)
 		pcall(function()
-			if Functions then Functions.BroadcastCommand("RemoveParticles", { state = isOn }) end
+			if Functions and Functions.SetRemoveParticles then Functions.SetRemoveParticles(isOn) end
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("RemoveParticles", { state = isOn }) end
 		end)
 	end)
-	createSwitch("Remove Effects", 2, fxSection, Settings.Bots, "RemoveEffects", function(isOn)
+	createSwitch("Remove Effects", 5, optSection, Settings.Bots, "RemoveEffects", function(isOn)
 		pcall(function()
-			if Functions then Functions.BroadcastCommand("RemoveEffects", { state = isOn }) end
+			if Functions and Functions.SetRemoveEffects then Functions.SetRemoveEffects(isOn) end
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("RemoveEffects", { state = isOn }) end
 		end)
 	end)
 
@@ -2194,7 +2197,7 @@ do
 end
 
 -- ============================================
--- SAFETY TAB (3-column masonry + full-width whitelist)
+-- SAFETY TAB (3-column masonry + Spoof + Whitelist)
 -- ============================================
 do
 	createDivider("Safety Tab", 1, tabs.Safety)
@@ -2211,6 +2214,20 @@ do
 	})
 	createTextBox("Delay (sec)", 1, afkS, Settings.Safety.AutoAfk, "Delay", 4, true)
 	createSwitch("Exclude Main", 2, afkS, Settings.Safety.AutoAfk, "ExcludeMain")
+
+	local spoofS = createSection("Spoof", 2, safetyCols[1], {
+		description = "Identity spoofing",
+		tooltip = "Spoof username, display name, or clear character outfit",
+		tag = "3x04"
+	})
+	createSwitch("Randomize User", 1, spoofS, Settings.Safety.Spoof, "RandomizeUser")
+	createSwitch("Randomize Display", 2, spoofS, Settings.Safety.Spoof, "RandomizeDisplay")
+	createSwitch("Clear Outfit", 3, spoofS, Settings.Safety.Spoof, "ClearOutfit", function(isOn)
+		pcall(function()
+			if Functions and Functions.ApplySpoof then Functions.ApplySpoof(Settings.Safety.Spoof) end
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("Spoof", Settings.Safety.Spoof) end
+		end)
+	end)
 
 	local leaveS = createSection("Auto Leave", 1, safetyCols[2], {
 		tbl = Settings.Safety.AutoLeave,
@@ -2238,7 +2255,7 @@ do
 	local whitelistSection = createSection("Whitelist", 3, tabs.Safety, {
 		description = "Allow users to join",
 		tooltip = "If someone whitelisted joins the server they will not trigger safety settings",
-		tag = "3x04"
+		tag = "3x05"
 	})
 	createWhitelistManager(1, whitelistSection, Settings.Safety.Whitelist)
 end
@@ -2400,10 +2417,16 @@ closeBtn.MouseButton1Click:Connect(function()
 		local FADE_TIME = 2.0
 		local TI_SYNC = TweenInfo.new(FADE_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-		-- 1. Master Frame Fade in-place (sharp corners preserved, no position movement)
+		-- 1. Master Frame Fade with Smooth Feathered Blur Dissolve
 		TweenService:Create(frame, TI_SYNC, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(frameStroke, TI_SYNC, {Transparency = 1}):Play()
-		if ambientFeather then TweenService:Create(ambientFeather, TI_SYNC, {ImageTransparency = 1}):Play() end
+		if ambientFeather then
+			ambientFeather.ImageTransparency = 0.15
+			TweenService:Create(ambientFeather, TI_SYNC, {
+				Size = UDim2.new(1, 120, 1, 120),
+				ImageTransparency = 1
+			}):Play()
+		end
 
 		-- 2. Master Synchronized Fade across Topbar, TabPanel, Body, and ALL descendants
 		TweenService:Create(topbar, TI_SYNC, {BackgroundTransparency = 1}):Play()
