@@ -176,26 +176,11 @@ task.wait(0.35); loaderGui:Destroy()
 local existing = pg:FindFirstChild("AntipathyAV"); if existing then existing:Destroy() end
 local guiParent = pg; pcall(function() if game:GetService("CoreGui") then guiParent = game:GetService("CoreGui") end end)
 local screenGui = Instance.new("ScreenGui"); screenGui.Name = "AntipathyAV"; screenGui.ResetOnSpawn = false; screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; screenGui.DisplayOrder = 999; screenGui.Parent = guiParent
-local frame = Instance.new("Frame"); frame.Name = "Main"; frame.Size = UDim2.new(0,FRAME_W,0,FRAME_H); frame.Position = UDim2.new(0.5,-FRAME_W/2,0.5,-FRAME_H/2); frame.BackgroundColor3 = Color3.fromRGB(0,0,0); frame.BorderSizePixel = 0; frame.ClipsDescendants = false; frame.Parent = screenGui
+local frame = Instance.new("Frame"); frame.Name = "Main"; frame.Size = UDim2.new(0,FRAME_W,0,FRAME_H); frame.Position = UDim2.new(0.5,-FRAME_W/2,0.5,-FRAME_H/2); frame.BackgroundColor3 = Color3.fromRGB(0,0,0); frame.BorderSizePixel = 0; frame.ClipsDescendants = true; frame.Parent = screenGui
 local viewportSize = workspace.CurrentCamera.ViewportSize
 local deviceScale = math.min(1, math.min(viewportSize.X/1920, viewportSize.Y/1080))
 local uiScale = Instance.new("UIScale"); uiScale.Scale = deviceScale; uiScale.Parent = frame
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() local vp = workspace.CurrentCamera.ViewportSize; deviceScale = math.min(1, math.min(vp.X/1920, vp.Y/1080)); if uiScale.Scale > 0 then uiScale.Scale = deviceScale end end)
-
--- Ambient Feathered / Blurry Edge (Softly Blends Window into Background)
-local ambientFeather = Instance.new("ImageLabel")
-ambientFeather.Name = "AmbientFeather"
-ambientFeather.AnchorPoint = Vector2.new(0.5, 0.5)
-ambientFeather.Position = UDim2.new(0.5, 0, 0.5, 0)
-ambientFeather.Size = UDim2.new(1, 56, 1, 56)
-ambientFeather.BackgroundTransparency = 1
-ambientFeather.Image = "rbxassetid://1316045217"
-ambientFeather.ImageColor3 = Color3.fromRGB(0, 0, 0)
-ambientFeather.ImageTransparency = 0.35
-ambientFeather.ScaleType = Enum.ScaleType.Slice
-ambientFeather.SliceCenter = Rect.new(10, 10, 118, 118)
-ambientFeather.ZIndex = 0
-ambientFeather.Parent = frame
 
 local mainGradient = Instance.new("UIGradient"); mainGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)), ColorSequenceKeypoint.new(0.7, Color3.fromRGB(8,8,8)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0))}; mainGradient.Rotation = 90; mainGradient.Parent = frame
 addCornerBorder(frame, Color3.fromRGB(255,255,255), 1.5, 16)
@@ -1640,6 +1625,15 @@ do
 			if isOn then
 				if runSetEnabled then runSetEnabled(false) end
 				if teleportSetEnabled then teleportSetEnabled(false) end
+				pcall(function()
+					if Functions and Functions.SetAutoParry then Functions.SetAutoParry(true) end
+				end)
+			else
+				if not (Settings.Farm.Run.Enabled or Settings.Farm.Teleport.Enabled) then
+					pcall(function()
+						if Functions and Functions.SetAutoParry then Functions.SetAutoParry(false) end
+					end)
+				end
 			end
 		end
 	})
@@ -1685,6 +1679,19 @@ do
 			if isOn then
 				if normalSetEnabled then normalSetEnabled(false) end
 				if teleportSetEnabled then teleportSetEnabled(false) end
+				pcall(function()
+					if Functions and Functions.SetFarmRun then Functions.SetFarmRun(true, false) end
+					if Functions and Functions.SetAutoParry then Functions.SetAutoParry(true) end
+					if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("Run", { state = true }) end
+				end)
+			else
+				pcall(function()
+					if Functions and Functions.SetFarmRun then Functions.SetFarmRun(false, false) end
+					if not (Settings.Farm.Normal.Enabled or Settings.Farm.Teleport.Enabled) then
+						if Functions and Functions.SetAutoParry then Functions.SetAutoParry(false) end
+					end
+					if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("Run", { state = false }) end
+				end)
 			end
 		end
 	})
@@ -1713,6 +1720,19 @@ do
 			if isOn then
 				if normalSetEnabled then normalSetEnabled(false) end
 				if runSetEnabled then runSetEnabled(false) end
+				pcall(function()
+					if Functions and Functions.SetFarmTeleport then Functions.SetFarmTeleport(true, false, Settings.Farm.Teleport.Position) end
+					if Functions and Functions.SetAutoParry then Functions.SetAutoParry(true) end
+					if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("Teleport", { state = true, position = Settings.Farm.Teleport.Position }) end
+				end)
+			else
+				pcall(function()
+					if Functions and Functions.SetFarmTeleport then Functions.SetFarmTeleport(false, false) end
+					if not (Settings.Farm.Normal.Enabled or Settings.Farm.Run.Enabled) then
+						if Functions and Functions.SetAutoParry then Functions.SetAutoParry(false) end
+					end
+					if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("Teleport", { state = false }) end
+				end)
 			end
 		end
 	})
@@ -2121,17 +2141,22 @@ end
 
 do
 	createDivider("Alt Settings", 1, tabs.BOTs)
-	local _, botSettingCols = createColumnLayout(tabs.BOTs, 2, COL_GAP, 2)
+	local _, botSettingCols = createColumnLayout(tabs.BOTs, 3, COL_GAP, 2)
 
-	-- Col 1: Ability & Performance
+	-- Col 1: Ability
 	local abilitySection = createSection("Ability", 1, botSettingCols[1], {
 		description = "Alt ability selection",
 		tooltip = "Select ability for alt accounts",
 		tag = "2x01"
 	})
-	createDropdown("Ability", 1, abilitySection, {"None", "Dragon V2", "Absolute Conf."}, Settings.Bots, "Ability")
+	createDropdown("Ability", 1, abilitySection, {"None", "Dragon V2", "Absolute Conf."}, Settings.Bots, "Ability", function(opt)
+		pcall(function()
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("SetAbility", { ability = opt }) end
+		end)
+	end)
 
-	local fpsSection = createSection("Performance", 2, botSettingCols[1], {
+	-- Col 2: Performance (FPS change strictly for bots)
+	local fpsSection = createSection("Performance", 1, botSettingCols[2], {
 		description = "Alt FPS limit",
 		tooltip = "Set FPS limit for alt accounts (1 to 9999)",
 		tag = "2x02"
@@ -2143,13 +2168,13 @@ do
 		fpsBox.Text = tostring(val)
 		Settings.Bots.FPS = val
 		pcall(function()
-			if Functions and Functions.SetFPS then Functions.SetFPS(val) end
+			-- Strictly broadcast to bots; do not affect controller
 			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("SetFPS", { fps = val }) end
 		end)
 	end)
 
-	-- Col 2: Unified Optimization (Textures, Rendering, Shadows, Particles, Effects)
-	local optSection = createSection("Optimization", 1, botSettingCols[2], {
+	-- Col 3: Optimization (Textures, Rendering, Shadows, Particles, Effects)
+	local optSection = createSection("Optimization", 1, botSettingCols[3], {
 		description = "Full engine optimizations",
 		tooltip = "Toggle texture, rendering, shadow, particle, and effect optimizations",
 		tag = "2x03"
@@ -2197,7 +2222,7 @@ do
 end
 
 -- ============================================
--- SAFETY TAB (3-column masonry + Spoof + Whitelist)
+-- SAFETY TAB (3-column top row + Spoof / Whitelist side-by-side)
 -- ============================================
 do
 	createDivider("Safety Tab", 1, tabs.Safety)
@@ -2214,20 +2239,6 @@ do
 	})
 	createTextBox("Delay (sec)", 1, afkS, Settings.Safety.AutoAfk, "Delay", 4, true)
 	createSwitch("Exclude Main", 2, afkS, Settings.Safety.AutoAfk, "ExcludeMain")
-
-	local spoofS = createSection("Spoof", 2, safetyCols[1], {
-		description = "Identity spoofing",
-		tooltip = "Spoof username, display name, or clear character outfit",
-		tag = "3x04"
-	})
-	createSwitch("Randomize User", 1, spoofS, Settings.Safety.Spoof, "RandomizeUser")
-	createSwitch("Randomize Display", 2, spoofS, Settings.Safety.Spoof, "RandomizeDisplay")
-	createSwitch("Clear Outfit", 3, spoofS, Settings.Safety.Spoof, "ClearOutfit", function(isOn)
-		pcall(function()
-			if Functions and Functions.ApplySpoof then Functions.ApplySpoof(Settings.Safety.Spoof) end
-			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("Spoof", Settings.Safety.Spoof) end
-		end)
-	end)
 
 	local leaveS = createSection("Auto Leave", 1, safetyCols[2], {
 		tbl = Settings.Safety.AutoLeave,
@@ -2252,7 +2263,49 @@ do
 	})
 	createTextBox("Delay (sec)", 1, stopS, Settings.Safety.AutoStop, "Delay", 4, true)
 
-	local whitelistSection = createSection("Whitelist", 3, tabs.Safety, {
+	-- Row 2: Spoof (1 setting width) + Whitelist (2 settings width) side-by-side
+	local safetyRow2 = Instance.new("Frame")
+	safetyRow2.Name = "SafetyRow2"
+	safetyRow2.LayoutOrder = 3
+	safetyRow2.Size = UDim2.new(1, 0, 0, 0)
+	safetyRow2.AutomaticSize = Enum.AutomaticSize.Y
+	safetyRow2.BackgroundTransparency = 1
+	safetyRow2.ZIndex = 10
+	safetyRow2.Parent = tabs.Safety
+
+	local spoofCol = Instance.new("Frame")
+	spoofCol.Name = "SpoofCol"
+	spoofCol.Size = UDim2.new(1/3, -math.floor(COL_GAP * 2 / 3), 0, 0)
+	spoofCol.Position = UDim2.new(0, 0, 0, 0)
+	spoofCol.AutomaticSize = Enum.AutomaticSize.Y
+	spoofCol.BackgroundTransparency = 1
+	spoofCol.ZIndex = 10
+	spoofCol.Parent = safetyRow2
+
+	local spoofS = createSection("Spoof", 1, spoofCol, {
+		description = "Identity spoofing",
+		tooltip = "Spoof username, display name, or clear character outfit",
+		tag = "3x04"
+	})
+	createSwitch("Randomize User", 1, spoofS, Settings.Safety.Spoof, "RandomizeUser")
+	createSwitch("Randomize Display", 2, spoofS, Settings.Safety.Spoof, "RandomizeDisplay")
+	createSwitch("Clear Outfit", 3, spoofS, Settings.Safety.Spoof, "ClearOutfit", function(isOn)
+		pcall(function()
+			if Functions and Functions.ApplySpoof then Functions.ApplySpoof(Settings.Safety.Spoof) end
+			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("Spoof", Settings.Safety.Spoof) end
+		end)
+	end)
+
+	local wlCol = Instance.new("Frame")
+	wlCol.Name = "WhitelistCol"
+	wlCol.Size = UDim2.new(2/3, -math.floor(COL_GAP / 3), 0, 0)
+	wlCol.Position = UDim2.new(1/3, math.floor(COL_GAP / 3), 0, 0)
+	wlCol.AutomaticSize = Enum.AutomaticSize.Y
+	wlCol.BackgroundTransparency = 1
+	wlCol.ZIndex = 10
+	wlCol.Parent = safetyRow2
+
+	local whitelistSection = createSection("Whitelist", 1, wlCol, {
 		description = "Allow users to join",
 		tooltip = "If someone whitelisted joins the server they will not trigger safety settings",
 		tag = "3x05"
@@ -2417,16 +2470,9 @@ closeBtn.MouseButton1Click:Connect(function()
 		local FADE_TIME = 2.0
 		local TI_SYNC = TweenInfo.new(FADE_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-		-- 1. Master Frame Fade with Smooth Feathered Blur Dissolve
+		-- 1. Master Frame Fade
 		TweenService:Create(frame, TI_SYNC, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(frameStroke, TI_SYNC, {Transparency = 1}):Play()
-		if ambientFeather then
-			ambientFeather.ImageTransparency = 0.15
-			TweenService:Create(ambientFeather, TI_SYNC, {
-				Size = UDim2.new(1, 120, 1, 120),
-				ImageTransparency = 1
-			}):Play()
-		end
 
 		-- 2. Master Synchronized Fade across Topbar, TabPanel, Body, and ALL descendants
 		TweenService:Create(topbar, TI_SYNC, {BackgroundTransparency = 1}):Play()
@@ -2435,7 +2481,7 @@ closeBtn.MouseButton1Click:Connect(function()
 
 		for _, child in ipairs(frame:GetDescendants()) do
 			pcall(function()
-				if child == centerSparkle or child == bgFooter or child.Parent == bgContainer or child == ambientFeather then return end
+				if child == centerSparkle or child == bgFooter or child.Parent == bgContainer then return end
 				if child:IsA("TextLabel") or child:IsA("TextBox") or child:IsA("TextButton") then
 					TweenService:Create(child, TI_SYNC, {TextTransparency = 1, BackgroundTransparency = 1}):Play()
 				elseif child:IsA("ImageLabel") or child:IsA("ImageButton") then
