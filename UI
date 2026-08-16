@@ -1,51 +1,27 @@
--- ============================================
--- ANTIPATHY UI MODULE
--- ============================================
--- This script is loaded BY Functions.lua which passes itself as an argument.
--- All configuration (usernames, etc.) lives in Functions.lua.
--- ============================================
-
--- Receive Functions module from the loader
 local Functions = ... or _G.AntipathyFunctions
-
--- ============================================
--- SERVICES
--- ============================================
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local pg = LocalPlayer:WaitForChild("PlayerGui")
-
--- Pull configuration from Functions
 local CONTROLLER_USERNAME = Functions and Functions.CONTROLLER_USERNAME or ""
 local ALT_USERNAMES = Functions and Functions.ALT_USERNAMES or {}
-
--- ============================================
--- CACHED TWEENINFOS
--- ============================================
 local TI_FAST = TweenInfo.new(0.1)
 local TI_NORMAL = TweenInfo.new(0.18)
 local TI_EXPAND = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local TI_COLLAPSE = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 local TI_GLOW = TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-
--- ============================================
--- LAYOUT CONSTANTS (Spacious & Grand)
--- ============================================
 local FRAME_W, FRAME_H = 880, 550
 local TOPBAR_H = 52
 local TAB_PANEL_W = 115
 local COL_GAP = 10
 
--- ============================================
--- SETTINGS TABLE
--- ============================================
+
 local Settings = Functions and Functions.Settings or {
 	Farm = {
 		Normal = { Enabled = false, Delay = 0, CPS = 10, Ability = "None", Keybind = "" },
-		Run = { Enabled = false, Delay = 0, Speed = 16, RandomJumps = false, Ability = "None", Keybind = "" },
+		Run = { Enabled = false, Delay = 0, RandomJumps = false, Ability = "None", Keybind = "" },
 		Teleport = { Enabled = false, Delay = 0, Position = "Normal", Ability = "None", Keybind = "" },
 		Parry = { Randomized = false, RandomizedMin = 0, RandomizedMax = 10, Accuracy = 50 },
 		Gamemode = "Classic",
@@ -73,9 +49,6 @@ if Functions then
 	Functions.Settings = Settings
 end
 
--- ============================================
--- GLOBAL SYNCHRONIZED GLITCH ENGINE
--- ============================================
 local currentGlitchColor = Color3.fromRGB(255, 255, 255)
 local currentGlitchTrans = 0.3
 local currentGlitchThick = 1.5
@@ -100,9 +73,6 @@ task.spawn(function()
 	end
 end)
 
--- ============================================
--- UTILITY FUNCTIONS
--- ============================================
 local function addCornerBorder(parent, color, thickness, cornerLen)
 	local corners = {}
 	local positions = {
@@ -119,7 +89,6 @@ local function addCornerBorder(parent, color, thickness, cornerLen)
 	return corners
 end
 
--- Global slider input router
 local _activeSliderUpdate = nil
 UserInputService.InputChanged:Connect(function(input)
 	if _activeSliderUpdate and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
@@ -130,9 +99,6 @@ UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then _activeSliderUpdate = nil end
 end)
 
--- ============================================
--- KEYBIND REGISTRY
--- ============================================
 local _keybindRegistry = {}
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
@@ -141,9 +107,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- ============================================
--- LOADER ANIMATION
--- ============================================
 local loaderGui = Instance.new("ScreenGui"); loaderGui.Name = "AntipathyLoader"; loaderGui.ResetOnSpawn = false; loaderGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; loaderGui.Parent = pg
 local card = Instance.new("Frame"); card.Size = UDim2.new(0,0,0,0); card.Position = UDim2.new(0.5,0,0.5,0); card.BackgroundColor3 = Color3.fromRGB(0,0,0); card.BorderSizePixel = 0; card.ClipsDescendants = true; card.ZIndex = 101; card.Parent = loaderGui
 addCornerBorder(card, Color3.fromRGB(255,255,255), 1.5, 16)
@@ -170,9 +133,6 @@ TweenService:Create(card, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play
 for _, child in ipairs(card:GetDescendants()) do if child:IsA("TextLabel") then TweenService:Create(child, TweenInfo.new(0.2), {TextTransparency = 1}):Play() elseif child:IsA("ImageLabel") then TweenService:Create(child, TweenInfo.new(0.2), {ImageTransparency = 1}):Play() elseif child:IsA("Frame") then TweenService:Create(child, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play() elseif child:IsA("UIStroke") then TweenService:Create(child, TweenInfo.new(0.2), {Transparency = 1}):Play() end end
 task.wait(0.35); loaderGui:Destroy()
 
--- ============================================
--- MAIN FRAME SETUP
--- ============================================
 local existing = pg:FindFirstChild("AntipathyAV"); if existing then existing:Destroy() end
 local guiParent = pg; pcall(function() if game:GetService("CoreGui") then guiParent = game:GetService("CoreGui") end end)
 local screenGui = Instance.new("ScreenGui"); screenGui.Name = "AntipathyAV"; screenGui.ResetOnSpawn = false; screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; screenGui.DisplayOrder = 999; screenGui.Parent = guiParent
@@ -186,7 +146,6 @@ local mainGradient = Instance.new("UIGradient"); mainGradient.Color = ColorSeque
 addCornerBorder(frame, Color3.fromRGB(255,255,255), 1.5, 16)
 local frameStroke = Instance.new("UIStroke"); frameStroke.Color = Color3.fromRGB(80,80,80); frameStroke.Thickness = 1; frameStroke.Transparency = 0.8; frameStroke.Parent = frame
 
--- Dim overlay
 local dimOverlay = Instance.new("Frame"); dimOverlay.Name = "DimOverlay"; dimOverlay.Size = UDim2.new(1,0,1,0); dimOverlay.BackgroundColor3 = Color3.fromRGB(0,0,0); dimOverlay.BackgroundTransparency = 1; dimOverlay.BorderSizePixel = 0; dimOverlay.Active = false; dimOverlay.ZIndex = 499; dimOverlay.Parent = frame
 local isDimmed = false
 UserInputService.InputBegan:Connect(function(input)
@@ -198,16 +157,13 @@ UserInputService.InputBegan:Connect(function(input)
 	end
 end)
 
--- Halftone corners
 local halftones = {}
 local function addHalftoneCorner(ax, ay, rot) local img = Instance.new("ImageLabel"); img.Size = UDim2.new(0,110,0,110); img.AnchorPoint = Vector2.new(ax,ay); img.Position = UDim2.new(ax, ax==0 and 15 or -15, ay, ay==0 and 15 or -15); img.BackgroundTransparency = 1; img.Image = "rbxassetid://99539206426667"; img.ImageColor3 = Color3.fromRGB(255,255,255); img.ImageTransparency = 0.82; img.Rotation = rot; img.ZIndex = 2; img.Parent = frame; table.insert(halftones, img) end
 addHalftoneCorner(0,0,5); addHalftoneCorner(1,0,85); addHalftoneCorner(0,1,275); addHalftoneCorner(1,1,175)
 
--- Center large sparkle star (Grand 380x380)
 local centerSparkle = Instance.new("ImageLabel"); centerSparkle.Size = UDim2.new(0,380,0,380); centerSparkle.AnchorPoint = Vector2.new(0.5,0.5); centerSparkle.Position = UDim2.new(0.5,-55,0.5,0); centerSparkle.BackgroundTransparency = 1; centerSparkle.Image = "rbxassetid://86630871053206"; centerSparkle.ImageColor3 = Color3.fromRGB(255,255,255); centerSparkle.ImageTransparency = 0.88; centerSparkle.ZIndex = 2; centerSparkle.Parent = frame
 task.spawn(function() while centerSparkle.Parent do TweenService:Create(centerSparkle, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {ImageTransparency = 0.76, Rotation = 15, Size = UDim2.new(0,405,0,405)}):Play(); task.wait(3); TweenService:Create(centerSparkle, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {ImageTransparency = 0.88, Rotation = 0, Size = UDim2.new(0,380,0,380)}):Play(); task.wait(3) end end)
 
--- Bouncing footer text (Clean wall boundaries with no clipping)
 local bgFooter = Instance.new("TextLabel")
 bgFooter.BackgroundTransparency = 1
 bgFooter.AutomaticSize = Enum.AutomaticSize.XY
@@ -311,7 +267,6 @@ task.spawn(function()
 	end
 end)
 
--- Background container for butterflies & shooting stars
 local bgContainer = Instance.new("CanvasGroup")
 bgContainer.Name = "BgContainer"
 bgContainer.Size = UDim2.new(1, -TAB_PANEL_W, 1, -TOPBAR_H)
@@ -320,7 +275,6 @@ bgContainer.BackgroundTransparency = 1
 bgContainer.ZIndex = 1
 bgContainer.Parent = frame
 
--- Butterflies
 local isClosingAnimation = false
 local butterflies = {}
 for i = 1, 14 do
@@ -376,16 +330,12 @@ task.spawn(function()
 	end
 end)
 
--- Shooting stars
 local _activeStars = 0
 task.spawn(function() while frame.Parent do if _activeStars >= 5 then task.wait(1) continue end; _activeStars=_activeStars+1; local star=Instance.new("Frame"); star.BackgroundColor3=Color3.fromRGB(255,255,255); star.BorderSizePixel=0; star.ZIndex=2; local sX=math.random()>0.5 and 1.1 or -0.1; local sY=math.random()*1.2-0.1; star.Position=UDim2.new(sX,0,sY,0); star.Size=UDim2.new(0,math.random(20,60),0,1); local a=math.rad(math.random(-20,20)); local dir=sX>0.5 and -1 or 1; local eX=sX+math.cos(a)*1.5*dir; local eY=sY+math.sin(a)*1.5*dir; local aW=bgContainer.AbsoluteSize.X>0 and bgContainer.AbsoluteSize.X or 500; local aH=bgContainer.AbsoluteSize.Y>0 and bgContainer.AbsoluteSize.Y or 300; star.Rotation=math.deg(math.atan2((eY-sY)*aH,(eX-sX)*aW))
 	local grad=Instance.new("UIGradient"); grad.Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(255,255,255)),ColorSequenceKeypoint.new(1,Color3.fromRGB(255,255,255))}; grad.Transparency=NumberSequence.new{NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(1,0)}; grad.Parent=star
 	local sparkle=Instance.new("Frame"); sparkle.Size=UDim2.new(0,3,0,3); sparkle.Position=UDim2.new(1,0,0.5,0); sparkle.AnchorPoint=Vector2.new(0.5,0.5); sparkle.BackgroundColor3=Color3.fromRGB(255,255,255); sparkle.BorderSizePixel=0; sparkle.ZIndex=2; sparkle.Parent=star; Instance.new("UICorner",sparkle).CornerRadius=UDim.new(1,0)
 	star.Parent=bgContainer; local td=math.random(10,20)/10; local tw=TweenService:Create(star,TweenInfo.new(td,Enum.EasingStyle.Linear),{Position=UDim2.new(eX,0,eY,0)}); tw:Play(); tw.Completed:Connect(function() star:Destroy(); _activeStars=_activeStars-1 end); task.wait(math.random(1,4)) end end)
 
--- ============================================
--- TOPBAR
--- ============================================
 local topbar = Instance.new("Frame"); topbar.Name = "Topbar"; topbar.Size = UDim2.new(1,0,0,TOPBAR_H); topbar.BackgroundColor3 = Color3.fromRGB(15,15,15); topbar.BorderSizePixel = 0; topbar.ZIndex = 50; topbar.Parent = frame
 local topGrad = Instance.new("UIGradient"); topGrad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(20,20,20)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10,10,10))}; topGrad.Rotation = 90; topGrad.Parent = topbar
 addCornerBorder(topbar, Color3.fromRGB(255,255,255), 1, 12)
@@ -442,7 +392,6 @@ task.spawn(function()
 	end
 end)
 
--- Top buttons (Pure Corner Borders, No Surrounding Stroke Line)
 local function makeTopButton(text, posX, posY, colorSet)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0, 36, 0, 28)
@@ -504,9 +453,6 @@ task.spawn(function()
 	end
 end)
 
--- ============================================
--- TAB PANEL (Seamless Borderless)
--- ============================================
 local tabPanel = Instance.new("Frame"); tabPanel.Name = "TabPanel"; tabPanel.Size = UDim2.new(0,TAB_PANEL_W,1,-TOPBAR_H); tabPanel.Position = UDim2.new(1,-TAB_PANEL_W,0,TOPBAR_H); tabPanel.BackgroundColor3 = Color3.fromRGB(12,12,12); tabPanel.BorderSizePixel = 0; tabPanel.ZIndex = 50; tabPanel.Parent = frame
 local tabPanelGrad = Instance.new("UIGradient"); tabPanelGrad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(15,15,15)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8,8,8))}; tabPanelGrad.Rotation = 180; tabPanelGrad.Parent = tabPanel
 local tabLayout = Instance.new("UIListLayout"); tabLayout.Padding = UDim.new(0,6); tabLayout.SortOrder = Enum.SortOrder.LayoutOrder; tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center; tabLayout.Parent = tabPanel
@@ -531,7 +477,6 @@ local TAB_NAMES = {"Farm", "BOTs", "Safety", "Stats", "Settings"}
 local TAB_IMAGES = {"rbxassetid://75300833275017","rbxassetid://85723984706301","rbxassetid://118751745086662","rbxassetid://136195218495313","rbxassetid://133619830565331"}
 for i, name in ipairs(TAB_NAMES) do local btn, line, stroke = makeTabButton(name, i, i==1, TAB_IMAGES[i]); tabButtons[name]=btn; tabLines[name]=line; tabStrokes[name]=stroke end
 
--- Save & Reset Actions (Stacked Full-Width Buttons Below Settings)
 local saveBtn = Instance.new("TextButton")
 saveBtn.Name = "SaveBtn"
 saveBtn.LayoutOrder = 6
@@ -590,7 +535,6 @@ saveBtn.MouseButton1Click:Connect(function()
 	isSaving = false
 end)
 
--- Reset Button
 local resetBtn = Instance.new("TextButton")
 resetBtn.Name = "ResetBtn"
 resetBtn.LayoutOrder = 7
@@ -633,7 +577,6 @@ local isResetting = false
 resetBtn.MouseButton1Click:Connect(function()
 	if isResetting then return end
 	isResetting = true
-	-- Reset Settings to defaults
 	Settings.Farm.Normal.Enabled = false
 	Settings.Farm.Normal.Delay = 0
 	Settings.Farm.Normal.CPS = 10
@@ -681,9 +624,6 @@ resetBtn.MouseButton1Click:Connect(function()
 	isResetting = false
 end)
 
--- ============================================
--- CTRL+H HIDE
--- ============================================
 local isHidden = false; local isMinimized = false; local dragging = false; local dragStart, startPos, targetPos, exactX, exactY
 UserInputService.InputBegan:Connect(function(input)
 	if input.KeyCode == Enum.KeyCode.H and (UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl)) then
@@ -691,9 +631,6 @@ UserInputService.InputBegan:Connect(function(input)
 	end
 end)
 
--- ============================================
--- BODY & TAB SCROLL FRAMES
--- ============================================
 local body = Instance.new("Frame"); body.Name = "Body"; body.BackgroundTransparency = 1; body.Position = UDim2.new(0,0,0,TOPBAR_H); body.Size = UDim2.new(1,-TAB_PANEL_W,1,-TOPBAR_H); body.ZIndex = 10; body.Parent = frame
 local function createTabScroll(name, vis)
 	local tab = Instance.new("ScrollingFrame"); tab.ScrollBarThickness = 3; tab.ScrollBarImageColor3 = Color3.fromRGB(80,80,80); tab.CanvasSize = UDim2.new(0,0,0,0); tab.AutomaticCanvasSize = Enum.AutomaticSize.Y; tab.ScrollingDirection = Enum.ScrollingDirection.Y; tab.ElasticBehavior = Enum.ElasticBehavior.Always; tab.Name = name; tab.BackgroundTransparency = 1; tab.BorderSizePixel = 0; tab.Size = UDim2.new(1,0,1,0); tab.Visible = vis; tab.ZIndex = 10; tab.Parent = body
@@ -703,9 +640,6 @@ local function createTabScroll(name, vis)
 end
 local tabs = {}; for i, name in ipairs(TAB_NAMES) do tabs[name] = createTabScroll(name.."Tab", i==1) end
 
--- ============================================
--- COLUMN LAYOUT HELPER (AutomaticSize)
--- ============================================
 local function createColumnLayout(parent, numCols, gap, order)
 	local container = Instance.new("Frame")
 	container.Name = "ColumnContainer"
@@ -738,9 +672,6 @@ local function createColumnLayout(parent, numCols, gap, order)
 	return container, columns
 end
 
--- ============================================
--- TECH TOOLTIP (Transparent Background + Synced Glitch Color)
--- ============================================
 local function createTooltip(parent, text, tag, posX, posY)
 	local icon = Instance.new("TextButton")
 	icon.Size = UDim2.new(0, 18, 0, 18)
@@ -757,7 +688,6 @@ local function createTooltip(parent, text, tag, posX, posY)
 	icon.Parent = parent
 	local iconCorners = addCornerBorder(icon, Color3.fromRGB(120, 120, 130), 1, 4)
 
-	-- Tooltip Card (corners only, no full outline)
 	local tip = Instance.new("Frame")
 	tip.Size = UDim2.new(0, 230, 0, 0)
 	tip.AutomaticSize = Enum.AutomaticSize.Y
@@ -777,8 +707,6 @@ local function createTooltip(parent, text, tag, posX, posY)
 	tipGrad.Parent = tip
 
 	addCornerBorder(tip, Color3.fromRGB(150, 150, 170), 1, 8)
-
-	-- Inner Content Frame
 	local tipContent = Instance.new("Frame")
 	tipContent.Size = UDim2.new(1, 0, 0, 0)
 	tipContent.AutomaticSize = Enum.AutomaticSize.Y
@@ -796,7 +724,6 @@ local function createTooltip(parent, text, tag, posX, posY)
 	tipPad.PaddingLeft = UDim.new(0, 10); tipPad.PaddingRight = UDim.new(0, 10)
 	tipPad.Parent = tipContent
 
-	-- Header Badge
 	local headerBadge = Instance.new("Frame")
 	headerBadge.LayoutOrder = 1
 	headerBadge.Size = UDim2.new(1, 0, 0, 14)
@@ -825,7 +752,6 @@ local function createTooltip(parent, text, tag, posX, posY)
 	badgeLbl.ZIndex = 10003
 	badgeLbl.Parent = headerBadge
 
-	-- Hierarchical Tag (e.g. [1x01], [1x03], [3x03])
 	local tagLbl = Instance.new("TextLabel")
 	tagLbl.BackgroundTransparency = 1
 	tagLbl.Size = UDim2.new(0.35, 0, 1, 0)
@@ -837,8 +763,6 @@ local function createTooltip(parent, text, tag, posX, posY)
 	tagLbl.TextXAlignment = Enum.TextXAlignment.Right
 	tagLbl.ZIndex = 10003
 	tagLbl.Parent = headerBadge
-
-	-- Synced Glitch Color Updater
 	task.spawn(function()
 		while tip.Parent do
 			if tip.Visible then
@@ -888,9 +812,6 @@ local function createTooltip(parent, text, tag, posX, posY)
 	return icon
 end
 
--- ============================================
--- UI BUILDER FUNCTIONS (Spacious 90px Header)
--- ============================================
 local function createSection(sectionTitle, order, parent, opts)
 	opts = opts or {}
 	local tbl = opts.tbl
@@ -942,7 +863,6 @@ local function createSection(sectionTitle, order, parent, opts)
 	header.ZIndex = 11
 	header.Parent = section
 
-	-- Section Title
 	local titleLbl = Instance.new("TextLabel")
 	titleLbl.BackgroundTransparency = 1
 	titleLbl.AutomaticSize = Enum.AutomaticSize.X
@@ -956,7 +876,6 @@ local function createSection(sectionTitle, order, parent, opts)
 	titleLbl.ZIndex = 12
 	titleLbl.Parent = header
 
-	-- Inline Tooltip [?] with Hierarchical Tag
 	if tooltip and #tooltip > 0 then
 		local tipHolder = Instance.new("Frame")
 		tipHolder.Size = UDim2.new(0, 18, 0, 18)
@@ -973,7 +892,6 @@ local function createSection(sectionTitle, order, parent, opts)
 		createTooltip(tipHolder, tooltip, tag, 0, 0)
 	end
 
-	-- Subtitle Description
 	local descLbl = Instance.new("TextLabel")
 	descLbl.BackgroundTransparency = 1
 	descLbl.Size = UDim2.new(1, -40, 0, 16)
@@ -987,7 +905,6 @@ local function createSection(sectionTitle, order, parent, opts)
 	descLbl.ZIndex = 12
 	descLbl.Parent = header
 
-	-- Arrow
 	local arrow = Instance.new("TextLabel")
 	arrow.BackgroundTransparency = 1
 	arrow.Size = UDim2.new(0, 18, 0, 18)
@@ -999,7 +916,6 @@ local function createSection(sectionTitle, order, parent, opts)
 	arrow.ZIndex = 12
 	arrow.Parent = header
 
-	-- Status dot & text
 	local statusDot, statusText
 	if hasToggle then
 		statusDot = Instance.new("Frame")
@@ -1024,7 +940,6 @@ local function createSection(sectionTitle, order, parent, opts)
 		statusText.Parent = header
 	end
 
-	-- Keybind button (Clean Minimalist Rounded Box, No Corner Lines)
 	local keybindBtn, keybindId
 	if hasToggle and opts.keybindTbl and opts.keybindKey then
 		local currentKeyName = opts.keybindTbl[opts.keybindKey]
@@ -1085,7 +1000,6 @@ local function createSection(sectionTitle, order, parent, opts)
 		end)
 	end
 
-	-- Toggle button
 	local toggleBg, toggleKnob, toggleStroke
 	if hasToggle then
 		toggleBg = Instance.new("TextButton")
@@ -1111,7 +1025,6 @@ local function createSection(sectionTitle, order, parent, opts)
 		Instance.new("UICorner", toggleKnob).CornerRadius = UDim.new(0, 3)
 	end
 
-	-- Settings Frame
 	local settingsFrame = Instance.new("Frame")
 	settingsFrame.Name = "Settings"
 	settingsFrame.Size = UDim2.new(1, -16, 0, 0)
@@ -1204,16 +1117,12 @@ local function createSwitch(text, order, parent, tbl, key, callback)
 	return {frame = c, setEnabled = setSwitch}
 end
 
--- ============================================
--- SLIDER WITH RANGE INDICATORS & DIMMING SUPPORT
--- ============================================
 local function createSlider(text, order, parent, min, max, tbl, key, step, suffix)
 	step = step or 1; suffix = suffix or ""; local value = tbl and tbl[key] or min
 	local isDimmed = false
 
 	local c = Instance.new("Frame"); c.LayoutOrder = order; c.Size = UDim2.new(1, 0, 0, 48); c.BackgroundTransparency = 1; c.ZIndex = 10; c.Parent = parent
 
-	-- Title
 	local lb = Instance.new("TextLabel")
 	lb.BackgroundTransparency = 1
 	lb.Size = UDim2.new(0.48, 0, 0, 16)
@@ -1226,7 +1135,6 @@ local function createSlider(text, order, parent, min, max, tbl, key, step, suffi
 	lb.ZIndex = 10
 	lb.Parent = c
 
-	-- Value Display (e.g. 0.50)
 	local vl = Instance.new("TextLabel")
 	vl.BackgroundTransparency = 1
 	vl.Size = UDim2.new(0.50, 0, 0, 16)
@@ -1243,7 +1151,6 @@ local function createSlider(text, order, parent, min, max, tbl, key, step, suffi
 	end
 	vl.Text = formatVal(value)
 
-	-- Track
 	local sb = Instance.new("Frame")
 	sb.Size = UDim2.new(1, 0, 0, 6)
 	sb.Position = UDim2.new(0, 0, 0, 22)
@@ -1281,7 +1188,6 @@ local function createSlider(text, order, parent, min, max, tbl, key, step, suffi
 	local knStroke = Instance.new("UIStroke", kn)
 	knStroke.Color = Color3.fromRGB(80, 80, 85)
 
-	-- Min & Max labels (Positioned well below track to prevent overlap)
 	local minLbl = Instance.new("TextLabel")
 	minLbl.BackgroundTransparency = 1
 	minLbl.Size = UDim2.new(0, 30, 0, 12)
@@ -1349,9 +1255,6 @@ local function createSlider(text, order, parent, min, max, tbl, key, step, suffi
 	}
 end
 
--- ============================================
--- DROPDOWN MENU WITH PULSATING ACCENT & WORKING CHECKMARKS
--- ============================================
 local function createDropdown(text, order, parent, options, tbl, key, onSelect)
 	local selected = tbl and tbl[key] or options[1]
 	local expanded = false
@@ -1465,7 +1368,6 @@ local function createDropdown(text, order, parent, options, tbl, key, onSelect)
 		ob.Parent = dl
 		Instance.new("UICorner", ob).CornerRadius = UDim.new(0, 5)
 
-		-- Left Accent Bar
 		local accent = Instance.new("Frame")
 		accent.Name = "AccentBar"
 		accent.Size = UDim2.new(0, 3, 0.7, 0)
@@ -1607,15 +1509,11 @@ local function createWhitelistManager(order, parent, listTbl)
 	box.FocusLost:Connect(function(ep) if ep and #box.Text:gsub("%s","")>0 then addUser() end end)
 end
 
--- ============================================
--- FARM TAB (3-column layout: Normal, Run, Teleport)
--- ============================================
 do
 	createDivider("Farming Tab", 1, tabs.Farm)
 	local _, farmCols = createColumnLayout(tabs.Farm, 3, COL_GAP, 2)
 	local normalSetEnabled, runSetEnabled, teleportSetEnabled
 
-	-- Col 1: Normal, Parry
 	local normalSettings; normalSettings, _, normalSetEnabled = createSection("Normal", 1, farmCols[1], {
 		tbl = Settings.Farm.Normal,
 		enabledKey = "Enabled",
@@ -1669,7 +1567,6 @@ do
 	randMinSlider.setDimmed(not isInitRand)
 	randMaxSlider.setDimmed(not isInitRand)
 
-	-- Col 2: Run, Gamemode
 	local runSettings; runSettings, _, runSetEnabled = createSection("Run", 1, farmCols[2], {
 		tbl = Settings.Farm.Run,
 		enabledKey = "Enabled",
@@ -1698,10 +1595,9 @@ do
 			end
 		end
 	})
-	createTextBox("Run Delay", 1, runSettings, Settings.Farm.Run, "Delay", 4, true)
-	createTextBox("Run Speed", 2, runSettings, Settings.Farm.Run, "Speed", 2, true)
-	createSwitch("Random Jumps", 3, runSettings, Settings.Farm.Run, "RandomJumps")
-	createDropdown("Ability", 4, runSettings, {"None", "Dragon V2", "Absolute Conf."}, Settings.Farm.Run, "Ability")
+	createTextBox("Run Delay (ms)", 1, runSettings, Settings.Farm.Run, "Delay", 4, true)
+	createSwitch("Random Jumps", 2, runSettings, Settings.Farm.Run, "RandomJumps")
+	createDropdown("Ability", 3, runSettings, {"None", "Dragon V2", "Absolute Conf."}, Settings.Farm.Run, "Ability")
 
 	local gamemodeSettings = createSection("Gamemode", 2, farmCols[2], {
 		description = "Gamemode selection",
@@ -1710,7 +1606,6 @@ do
 	})
 	createDropdown("Mode", 1, gamemodeSettings, {"Classic", "2 Teams", "Placeholder"}, Settings.Farm, "Gamemode")
 
-	-- Col 3: Teleport
 	local teleportSettings; teleportSettings, _, teleportSetEnabled = createSection("Teleport", 1, farmCols[3], {
 		tbl = Settings.Farm.Teleport,
 		enabledKey = "Enabled",
@@ -1739,7 +1634,7 @@ do
 			end
 		end
 	})
-	createTextBox("Delay", 1, teleportSettings, Settings.Farm.Teleport, "Delay", 4, true)
+	createTextBox("Delay (ms)", 1, teleportSettings, Settings.Farm.Teleport, "Delay", 4, true)
 	createDropdown("Position", 2, teleportSettings, {"Normal", "Above", "Below"}, Settings.Farm.Teleport, "Position", function(pos)
 		if Settings.Farm.Teleport.Enabled then
 			pcall(function()
@@ -1751,9 +1646,6 @@ do
 	createDropdown("Ability", 3, teleportSettings, {"None", "Dragon V2", "Absolute Conf."}, Settings.Farm.Teleport, "Ability")
 end
 
--- ============================================
--- BOTS TAB (Square Profile Picture + Script Corners + AFK State Sync)
--- ============================================
 local botCols, botEntries, nextBotCol = nil, {}, 1
 local pendingBots = {}
 
@@ -1782,7 +1674,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 
 	addCornerBorder(entry, Color3.fromRGB(70, 70, 75), 1, 8)
 
-	-- Top Accent Line (Synchronized with AFK Status)
 	local accentLine = Instance.new("Frame")
 	accentLine.Size = UDim2.new(1, 0, 0, 2)
 	accentLine.BackgroundColor3 = Color3.fromRGB(80, 220, 80)
@@ -1799,7 +1690,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 	header.ZIndex = 11
 	header.Parent = entry
 
-	-- Square Profile Picture with Script Corners (52x52)
 	local pfp = Instance.new("ImageLabel")
 	pfp.Size = UDim2.new(0, 52, 0, 52)
 	pfp.Position = UDim2.new(0, 12, 0, 20)
@@ -1816,7 +1706,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 		if ok and url then pfp.Image = url end
 	end)
 
-	-- Display Name
 	local dnL = Instance.new("TextLabel")
 	dnL.BackgroundTransparency = 1
 	dnL.Size = UDim2.new(1, -94, 0, 20)
@@ -1830,7 +1719,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 	dnL.ZIndex = 12
 	dnL.Parent = header
 
-	-- Username (@username)
 	local unL = Instance.new("TextLabel")
 	unL.BackgroundTransparency = 1
 	unL.Size = UDim2.new(1, -94, 0, 16)
@@ -1844,7 +1732,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 	unL.ZIndex = 12
 	unL.Parent = header
 
-	-- Status Row (Active / AFK)
 	local statusDot = Instance.new("Frame")
 	statusDot.Size = UDim2.new(0, 7, 0, 7)
 	statusDot.Position = UDim2.new(0, 74, 0, 66)
@@ -1877,7 +1764,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 	arrow.ZIndex = 12
 	arrow.Parent = header
 
-	-- Expandable content
 	local sf = Instance.new("Frame")
 	sf.Size = UDim2.new(1, -16, 0, 0)
 	sf.Position = UDim2.new(0, 8, 0, BOT_HEADER_H + 6)
@@ -1890,7 +1776,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 	sl.SortOrder = Enum.SortOrder.LayoutOrder
 	sl.Parent = sf
 
-	-- Themed Action Button Row 1 (Leave, Rejoin, AFK)
 	local btnRow1 = Instance.new("Frame")
 	btnRow1.LayoutOrder = 1
 	btnRow1.Size = UDim2.new(1, 0, 0, 28)
@@ -1904,10 +1789,11 @@ local function createBotCard(targetCol, userId, displayName, username)
 	btnLayout1.SortOrder = Enum.SortOrder.LayoutOrder
 	btnLayout1.Parent = btnRow1
 
-	local function makeThemedCardBtn(txt, ord, parentRow)
+	local function makeThemedCardBtn(txt, ord, parentRow, totalCount)
+		totalCount = totalCount or 3
 		local b = Instance.new("TextButton")
 		b.LayoutOrder = ord
-		b.Size = UDim2.new(1/3, -4, 1, 0)
+		b.Size = UDim2.new(1/totalCount, -4, 1, 0)
 		b.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
 		b.Text = txt
 		b.Font = Enum.Font.GothamBold
@@ -1950,8 +1836,7 @@ local function createBotCard(targetCol, userId, displayName, username)
 		end)
 	end
 
-	-- Leave Button
-	local leaveBtn, leaveCorners = makeThemedCardBtn("Leave", 1, btnRow1)
+	local leaveBtn, leaveCorners = makeThemedCardBtn("Leave", 1, btnRow1, 2)
 	local isLeaving = false
 	leaveBtn.MouseButton1Click:Connect(function()
 		if isLeaving then return end
@@ -1964,26 +1849,10 @@ local function createBotCard(targetCol, userId, displayName, username)
 		isLeaving = false
 	end)
 
-	-- Rejoin Button
-	local rejoinBtn, rejoinCorners = makeThemedCardBtn("Rejoin", 2, btnRow1)
-	local isRejoining = false
-	rejoinBtn.MouseButton1Click:Connect(function()
-		if isRejoining then return end
-		isRejoining = true
-		pcall(function()
-			if Functions then Functions.SendCommand(userId, "Rejoin") end
-		end)
-		triggerCardBtnDone(rejoinBtn, rejoinCorners, "Rejoin")
-		task.wait(1.2)
-		isRejoining = false
-	end)
-
-	-- AFK Toggle Button (Always Green if AFK, Always Red if Active)
-	local afkBtn, afkCorners = makeThemedCardBtn("AFK", 3, btnRow1)
+	local afkBtn, afkCorners = makeThemedCardBtn("AFK", 2, btnRow1, 2)
 
 	local function updateAfkVisuals()
 		if isAfk then
-			-- AFK On -> Green Accent
 			statusDot.BackgroundColor3 = Color3.fromRGB(80, 220, 80)
 			statusLbl.Text = "Status: AFK"
 			statusLbl.TextColor3 = Color3.fromRGB(80, 220, 80)
@@ -1991,7 +1860,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 			afkBtn.TextColor3 = Color3.fromRGB(80, 220, 80)
 			for _, c in ipairs(afkCorners) do c.BackgroundColor3 = Color3.fromRGB(80, 220, 80) end
 		else
-			-- Active -> Red Accent
 			statusDot.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 			statusLbl.Text = "Status: Active"
 			statusLbl.TextColor3 = Color3.fromRGB(220, 60, 60)
@@ -2010,7 +1878,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 		end)
 	end)
 
-	-- Themed Action Button Row 2 (Follow, Bring, Spin)
 	local btnRow2 = Instance.new("Frame")
 	btnRow2.LayoutOrder = 2
 	btnRow2.Size = UDim2.new(1, 0, 0, 28)
@@ -2024,7 +1891,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 	btnLayout2.SortOrder = Enum.SortOrder.LayoutOrder
 	btnLayout2.Parent = btnRow2
 
-	-- Follow Toggle Button (Green if On, Red if Off)
 	local isFollowing = false
 	local followBtn, followCorners = makeThemedCardBtn("Follow", 1, btnRow2)
 	local function updateFollowVisuals()
@@ -2045,7 +1911,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 		end)
 	end)
 
-	-- Bring 1-Click Action Button (Displays 'Done' in Cyan/Blue)
 	local bringBtn, bringCorners = makeThemedCardBtn("Bring", 2, btnRow2)
 	local isBringing = false
 	bringBtn.MouseButton1Click:Connect(function()
@@ -2059,7 +1924,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 		isBringing = false
 	end)
 
-	-- Spin Toggle Button (Green if On, Red if Off)
 	local isSpinning = false
 	local spinBtn, spinCorners = makeThemedCardBtn("Spin", 3, btnRow2)
 	local function updateSpinVisuals()
@@ -2083,7 +1947,6 @@ local function createBotCard(targetCol, userId, displayName, username)
 	local joinVal = createStatRow("Join", "--", 5, sf)
 	local sessVal = createStatRow("Session", "--", 6, sf)
 
-	-- Username row below Session Time
 	local userVal = createStatRow("Username", "@" .. username, 7, sf)
 	userVal.TextColor3 = Color3.fromRGB(130, 130, 140)
 	userVal.TextSize = 12
@@ -2152,8 +2015,6 @@ end
 do
 	createDivider("Alt Settings", 1, tabs.BOTs)
 	local _, botSettingCols = createColumnLayout(tabs.BOTs, 3, COL_GAP, 2)
-
-	-- Col 1: Ability
 	local abilitySection = createSection("Ability", 1, botSettingCols[1], {
 		description = "Alt ability selection",
 		tooltip = "Select ability for alt accounts",
@@ -2164,8 +2025,6 @@ do
 			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("SetAbility", { ability = opt }) end
 		end)
 	end)
-
-	-- Col 2: Performance (FPS change strictly for bots)
 	local fpsSection = createSection("Performance", 1, botSettingCols[2], {
 		description = "Alt FPS limit",
 		tooltip = "Set FPS limit for alt accounts (1 to 9999)",
@@ -2178,14 +2037,13 @@ do
 		fpsBox.Text = tostring(val)
 		Settings.Bots.FPS = val
 		pcall(function()
-			-- Strictly broadcast to bots; do not affect controller
+
 			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("SetFPS", { fps = val }) end
 		end)
 	end
 	fpsBox.FocusLost:Connect(function() applyFPS() end)
-	-- Also fire immediately on Enter key while typing
+
 	fpsBox:GetPropertyChangedSignal("Text"):Connect(function()
-		-- Check via UserInputService if Enter was just pressed
 	end)
 	game:GetService("UserInputService").InputBegan:Connect(function(input, gp)
 		if gp then return end
@@ -2196,7 +2054,6 @@ do
 		end
 	end)
 
-	-- Col 3: Optimization (Textures, Rendering, Shadows, Particles, Effects)
 	local optSection = createSection("Optimization", 1, botSettingCols[3], {
 		description = "Full engine optimizations",
 		tooltip = "Toggle texture, rendering, shadow, particle, and effect optimizations",
@@ -2237,16 +2094,13 @@ do
 	local botContainer
 	botContainer, botCols = createColumnLayout(tabs.BOTs, 3, COL_GAP, 4)
 
-	-- Flush any pending bot entries
+
 	for _, p in ipairs(pendingBots) do
 		addBotEntry(p.userId, p.displayName, p.username)
 	end
 	pendingBots = {}
 end
 
--- ============================================
--- SAFETY TAB (3-column top row + Spoof / Whitelist side-by-side)
--- ============================================
 do
 	createDivider("Safety Tab", 1, tabs.Safety)
 	local _, safetyCols = createColumnLayout(tabs.Safety, 3, COL_GAP, 2)
@@ -2286,7 +2140,6 @@ do
 	})
 	createTextBox("Delay (sec)", 1, stopS, Settings.Safety.AutoStop, "Delay", 4, true)
 
-	-- Row 2: Spoof (1 setting width) + Whitelist (2 settings width) side-by-side
 	local safetyRow2 = Instance.new("Frame")
 	safetyRow2.Name = "SafetyRow2"
 	safetyRow2.LayoutOrder = 3
@@ -2336,9 +2189,6 @@ do
 	createWhitelistManager(1, whitelistSection, Settings.Safety.Whitelist)
 end
 
--- ============================================
--- STATS TAB
--- ============================================
 local statLabels = {}
 do
 	local so = 0; local function sn() so=so+1; return so end
@@ -2355,9 +2205,6 @@ do
 	statLabels.TotalParries = createStatRow("Job Id", "0", sn(), tabs.Stats); statLabels.AvgFPS = createStatRow("Game Id", "--", sn(), tabs.Stats); statLabels.AbilitiesUsed = createStatRow("V1.2", "V1.2", sn(), tabs.Stats)
 end
 
--- ============================================
--- SETTINGS TAB
--- ============================================
 do
 	local el = Instance.new("TextLabel")
 	el.BackgroundTransparency = 1
@@ -2370,9 +2217,6 @@ do
 	el.Parent = tabs.Settings
 end
 
--- ============================================
--- SECTION HOVER GLITCH (Synchronized with Global Glitch)
--- ============================================
 do
 	local function applySectionHoverGlitch(section)
 		if not section or not section:IsA("Frame") then return end
@@ -2420,9 +2264,6 @@ do
 	end)
 end
 
--- ============================================
--- LIVE STATS UPDATER
--- ============================================
 local _sessionStartTime = tick()
 task.spawn(function()
 	local frameCount = 0; local lastUpdate = tick()
@@ -2438,7 +2279,6 @@ task.spawn(function()
 			if statLabels.HighestPing then statLabels.HighestPing.Text = tostring(Settings.Stats.HighestPing).."ms" end; if statLabels.SessionTime then statLabels.SessionTime.Text = sessionStr end
 			Settings.Stats.FPS = fps; Settings.Stats.Ping = tonumber(ping) or 0
 
-			-- Update Active / AFK / Total Alts using workspace.Alive
 			pcall(function()
 				local aliveFolder = workspace:FindFirstChild("Alive") or workspace:FindFirstChild("alive")
 				local activeCount = 0
@@ -2474,9 +2314,6 @@ task.spawn(function()
 	end
 end)
 
--- ============================================
--- TAB SWITCHING
--- ============================================
 local function switchTab(tabName)
 	for name, tab in pairs(tabs) do if name ~= tabName then tab.Visible = false end end
 	local activeTab = tabs[tabName]; activeTab.Visible = true
@@ -2494,9 +2331,6 @@ local function switchTab(tabName)
 end
 for name, btn in pairs(tabButtons) do btn.MouseButton1Click:Connect(function() switchTab(name) end) end
 
--- ============================================
--- MINIMIZE / CLOSE / DRAG
--- ============================================
 minimizeBtn.MouseButton1Click:Connect(function()
 	dragging = false; targetPos = nil
 	if isMinimized then
@@ -2525,11 +2359,8 @@ closeBtn.MouseButton1Click:Connect(function()
 		local FADE_TIME = 2.0
 		local TI_SYNC = TweenInfo.new(FADE_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-		-- 1. Master Frame Fade
 		TweenService:Create(frame, TI_SYNC, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(frameStroke, TI_SYNC, {Transparency = 1}):Play()
-
-		-- 2. Master Synchronized Fade across Topbar, TabPanel, Body, and ALL descendants
 		TweenService:Create(topbar, TI_SYNC, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(tabPanel, TI_SYNC, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(body, TI_SYNC, {BackgroundTransparency = 1}):Play()
@@ -2549,19 +2380,16 @@ closeBtn.MouseButton1Click:Connect(function()
 			end)
 		end
 
-		-- 3. Center Star Expands Gracefully and Fades out (starts t=0, duration 2.0s)
 		TweenService:Create(centerSparkle, TI_SYNC, {
 			ImageTransparency = 1,
 			Size = UDim2.new(0, 580, 0, 580),
 			Rotation = centerSparkle.Rotation + 60
 		}):Play()
 
-		-- 4. Halftone corners fade out (starts t=0, duration 2.0s)
 		for _, ht in ipairs(halftones) do
 			TweenService:Create(ht, TI_SYNC, {ImageTransparency = 1}):Play()
 		end
 
-		-- 5. Bouncing footer text glitches rhythmically with corrupt chars, fades, and dissolves quickly
 		task.spawn(function()
 			local origPos = bgFooter.Position
 			local corruptTexts = {"01010101", "@ntip4thy...", "### #####", "why, why?", "H3il Antipathy", "....."}
@@ -2575,7 +2403,6 @@ closeBtn.MouseButton1Click:Connect(function()
 			bgFooter.Visible = false
 		end)
 
-		-- 6. Butterflies swarm and fly smoothly out of the frame into the screen (across 2.0s)
 		bgContainer.ClipsDescendants = false
 		task.spawn(function()
 			for _, bf in ipairs(butterflies) do
@@ -2601,9 +2428,6 @@ UserInputService.InputChanged:Connect(function(input) if dragging and input.User
 UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false; TweenService:Create(frame, TI_FAST, {BackgroundTransparency=0}):Play() end end)
 RunService.RenderStepped:Connect(function() if targetPos and (dragging or (Vector2.new(frame.Position.X.Offset,frame.Position.Y.Offset)-Vector2.new(targetPos.X.Offset,targetPos.Y.Offset)).Magnitude>0.1) then if not exactX then exactX=frame.Position.X.Offset; exactY=frame.Position.Y.Offset end; exactX=exactX+(targetPos.X.Offset-exactX)*0.025; exactY=exactY+(targetPos.Y.Offset-exactY)*0.025; frame.Position=UDim2.new(targetPos.X.Scale,exactX,targetPos.Y.Scale,exactY) elseif not dragging then targetPos=nil; exactX=nil; exactY=nil end end)
 
--- ============================================
--- ALTS SCANNING & BOT REGISTRATION (Safe for IDs & Names)
--- ============================================
 task.spawn(function()
 	local function isAltMatch(player, altIdentifier)
 		if not player or not altIdentifier then return false end
@@ -2638,9 +2462,6 @@ task.spawn(function()
 	end)
 end)
 
--- ============================================
--- RETURN API
--- ============================================
 return {
 	Settings = Settings,
 	StatLabels = statLabels,
