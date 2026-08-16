@@ -47,7 +47,7 @@ local Settings = Functions and Functions.Settings or {
 		Normal = { Enabled = false, Delay = 0, CPS = 10, Ability = "None", Keybind = "" },
 		Run = { Enabled = false, Delay = 0, Speed = 16, RandomJumps = false, Ability = "None", Keybind = "" },
 		Teleport = { Enabled = false, Delay = 0, Position = "Normal", Ability = "None", Keybind = "" },
-		Parry = { Randomized = false, RandomizedMin = 0, RandomizedMax = 1, Accuracy = 0.5 },
+		Parry = { Randomized = false, RandomizedMin = 0, RandomizedMax = 10, Accuracy = 50 },
 		Gamemode = "Classic",
 	},
 	Bots = {
@@ -1352,7 +1352,7 @@ end
 -- ============================================
 -- DROPDOWN MENU WITH PULSATING ACCENT & WORKING CHECKMARKS
 -- ============================================
-local function createDropdown(text, order, parent, options, tbl, key)
+local function createDropdown(text, order, parent, options, tbl, key, onSelect)
 	local selected = tbl and tbl[key] or options[1]
 	local expanded = false
 	local c = Instance.new("Frame")
@@ -1535,6 +1535,9 @@ local function createDropdown(text, order, parent, options, tbl, key)
 			dbLabel.Text = text .. ":  " .. opt
 			updateOptionVisuals()
 			collapse()
+			if onSelect then
+				pcall(function() onSelect(opt) end)
+			end
 		end)
 	end
 
@@ -1658,9 +1661,9 @@ do
 		if randMinSlider then randMinSlider.setDimmed(not isOn) end
 		if randMaxSlider then randMaxSlider.setDimmed(not isOn) end
 	end)
-	randMinSlider = createSlider("Rand. Min", 2, parrySettings, 0, 1, Settings.Farm.Parry, "RandomizedMin", 0.01)
-	randMaxSlider = createSlider("Rand. Max", 3, parrySettings, 0, 1, Settings.Farm.Parry, "RandomizedMax", 0.01)
-	createSlider("Accuracy", 4, parrySettings, 0, 1, Settings.Farm.Parry, "Accuracy", 0.01)
+	randMinSlider = createSlider("Rand. Min", 2, parrySettings, 0, 20, Settings.Farm.Parry, "RandomizedMin", 0.5)
+	randMaxSlider = createSlider("Rand. Max", 3, parrySettings, 0, 20, Settings.Farm.Parry, "RandomizedMax", 0.5)
+	createSlider("Accuracy", 4, parrySettings, 0, 100, Settings.Farm.Parry, "Accuracy", 1)
 
 	local isInitRand = Settings.Farm.Parry.Randomized
 	randMinSlider.setDimmed(not isInitRand)
@@ -1737,7 +1740,14 @@ do
 		end
 	})
 	createTextBox("Delay", 1, teleportSettings, Settings.Farm.Teleport, "Delay", 4, true)
-	createDropdown("Position", 2, teleportSettings, {"Normal", "Above", "Below"}, Settings.Farm.Teleport, "Position")
+	createDropdown("Position", 2, teleportSettings, {"Normal", "Above", "Below"}, Settings.Farm.Teleport, "Position", function(pos)
+		if Settings.Farm.Teleport.Enabled then
+			pcall(function()
+				if Functions and Functions.SetFarmTeleport then Functions.SetFarmTeleport(true, false, pos) end
+				if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("Teleport", { state = true, position = pos }) end
+			end)
+		end
+	end)
 	createDropdown("Ability", 3, teleportSettings, {"None", "Dragon V2", "Absolute Conf."}, Settings.Farm.Teleport, "Ability")
 end
 
@@ -2162,7 +2172,7 @@ do
 		tag = "2x02"
 	})
 	local _, fpsBox = createTextBox("Change FPS", 1, fpsSection, Settings.Bots, "FPS", 4, true)
-	fpsBox.FocusLost:Connect(function()
+	local function applyFPS()
 		local val = tonumber(fpsBox.Text) or 60
 		val = math.clamp(math.floor(val), 1, 9999)
 		fpsBox.Text = tostring(val)
@@ -2171,6 +2181,19 @@ do
 			-- Strictly broadcast to bots; do not affect controller
 			if Functions and Functions.BroadcastCommand then Functions.BroadcastCommand("SetFPS", { fps = val }) end
 		end)
+	end
+	fpsBox.FocusLost:Connect(function() applyFPS() end)
+	-- Also fire immediately on Enter key while typing
+	fpsBox:GetPropertyChangedSignal("Text"):Connect(function()
+		-- Check via UserInputService if Enter was just pressed
+	end)
+	game:GetService("UserInputService").InputBegan:Connect(function(input, gp)
+		if gp then return end
+		if input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.KeypadEnter then
+			if fpsBox:IsFocused() then
+				applyFPS()
+			end
+		end
 	end)
 
 	-- Col 3: Optimization (Textures, Rendering, Shadows, Particles, Effects)
@@ -2414,6 +2437,38 @@ task.spawn(function()
 			if statLabels.FPS then statLabels.FPS.Text = tostring(fps) end; if statLabels.Ping then statLabels.Ping.Text = pingStr end
 			if statLabels.HighestPing then statLabels.HighestPing.Text = tostring(Settings.Stats.HighestPing).."ms" end; if statLabels.SessionTime then statLabels.SessionTime.Text = sessionStr end
 			Settings.Stats.FPS = fps; Settings.Stats.Ping = tonumber(ping) or 0
+
+			-- Update Active / AFK / Total Alts using workspace.Alive
+			pcall(function()
+				local aliveFolder = workspace:FindFirstChild("Alive") or workspace:FindFirstChild("alive")
+				local activeCount = 0
+				local totalCount = #ALT_USERNAMES
+
+				for _, altId in ipairs(ALT_USERNAMES) do
+					local aStr = tostring(altId):lower()
+					local altPlayer = nil
+					for _, p in ipairs(Players:GetPlayers()) do
+						if p.Name:lower() == aStr or tostring(p.UserId) == aStr then
+							altPlayer = p
+							break
+						end
+					end
+					if altPlayer then
+						if aliveFolder and (aliveFolder:FindFirstChild(altPlayer.Name) or (altPlayer.Character and altPlayer.Character.Parent == aliveFolder)) then
+							activeCount = activeCount + 1
+						elseif not aliveFolder and altPlayer.Character and altPlayer.Character.Parent == workspace then
+							activeCount = activeCount + 1
+						end
+					end
+				end
+
+				if statLabels.ActiveAlts then statLabels.ActiveAlts.Text = tostring(activeCount) end
+				if statLabels.TotalAlts then statLabels.TotalAlts.Text = tostring(totalCount) end
+				if statLabels.AfkAlts then statLabels.AfkAlts.Text = tostring(math.max(0, totalCount - activeCount)) end
+				Settings.Stats.ActiveAlts = activeCount
+				Settings.Stats.TotalAlts = totalCount
+				Settings.Stats.AfkAlts = math.max(0, totalCount - activeCount)
+			end)
 		end
 		RunService.Heartbeat:Wait()
 	end
